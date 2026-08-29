@@ -1,0 +1,18 @@
+# Local development config for the self-hosted LiveKit server.
+# Copy to livekit.yaml and fill in real values — keys here must match
+# LIVEKIT_API_KEY / LIVEKIT_API_SECRET in .env. Both livekit.yaml and .env are
+# gitignored; only this template is committed.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # false: clients connect over the LAN, so the server's private IP (matching
+  # LIVEKIT_URL) is already reachable — no need to advertise a public IP via STUN.
+  use_external_ip: false
+keys:
+  # API key: any string. Secret: at least 32 characters.
+  # Generate a pair with: echo "APIkv$(openssl rand -hex 8): $(openssl rand -base64 36 | tr -d '\n=+/' | cut -c1-48)"
+  replace-with-your-own-key: replace_with_your_own_secret_min_32_chars
+logging:
+  level: info
