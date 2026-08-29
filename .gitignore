@@ -1,0 +1,98 @@
+# =========================
+# macOS
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# =========================
+# Xcode / Swift (nad-ios/)
+# =========================
+nad-ios/**/xcuserdata/
+nad-ios/**/*.xcuserstate
+
+nad-ios/**/build/
+nad-ios/**/DerivedData/
+nad-ios/**/*.moved-aside
+nad-ios/**/*.hmap
+nad-ios/**/*.ipa
+nad-ios/**/*.dSYM.zip
+nad-ios/**/*.dSYM
+
+nad-ios/**/*.xcscmblueprint
+nad-ios/**/*.xccheckout
+
+# Swift Package Manager
+nad-ios/**/.swiftpm/
+nad-ios/**/.build/
+# Note: Package.resolved is intentionally NOT ignored — it pins dependency
+# versions and should be committed for an app target.
+
+# CocoaPods
+# Uncomment only if CocoaPods is adopted and the team agrees not to vendor Pods/
+# nad-ios/**/Pods/
+
+# Carthage
+nad-ios/**/Carthage/Build/
+
+# fastlane
+nad-ios/**/fastlane/report.xml
+nad-ios/**/fastlane/screenshots/
+nad-ios/**/fastlane/test_output/
+
+# =========================
+# Python (nad-backend/)
+# =========================
+nad-backend/**/__pycache__/
+nad-backend/**/*.py[cod]
+nad-backend/**/*$py.class
+nad-backend/**/*.so
+
+# Virtual environments
+nad-backend/**/.venv/
+nad-backend/**/venv/
+nad-backend/**/env/
+nad-backend/**/ENV/
+
+# Packaging
+nad-backend/**/build/
+nad-backend/**/dist/
+nad-backend/**/*.egg-info/
+nad-backend/**/.eggs/
+
+# Tooling caches
+nad-backend/**/.pytest_cache/
+nad-backend/**/.mypy_cache/
+nad-backend/**/.ruff_cache/
+nad-backend/**/.tox/
+nad-backend/**/.coverage
+nad-backend/**/coverage.xml
+nad-backend/**/htmlcov/
+
+nad-backend/**/.ipynb_checkpoints/
+
+# Local dev databases
+nad-backend/**/db.sqlite3
+nad-backend/**/*.sqlite3
+
+# =========================
+# Secrets & editor/tooling
+# =========================
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.p12
+*.mobileprovision
+*.cer
+
+.vscode/
+.idea/
+*.swp
+*.log
