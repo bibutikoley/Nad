@@ -59,11 +59,18 @@ final class VoiceSessionController: ObservableObject {
     @Published var micToggleError: String?
 
     /// Smoothed 0...1 levels for the visualizer.
-    @Published private(set) var micLevel: Float = 0
-    @Published private(set) var agentLevel: Float = 0
-
-    private let micLevelMonitor = AudioLevelMonitor()
-    private let agentLevelMonitor = AudioLevelMonitor()
+    ///
+    /// Handed out as the monitors themselves rather than republished as `@Published`
+    /// properties here. Republishing looked tidier but made every audio buffer touch *this*
+    /// object's `objectWillChange`, and `VoiceView` observes this object — so a level moving
+    /// ~100 times a second invalidated the header, the whole transcript and the composer
+    /// along with the blob. The visualizer subscribes to these directly instead, so a level
+    /// change now invalidates nothing but the blob.
+    ///
+    /// Measured as a real but secondary cost: it did not by itself cause the main-thread
+    /// stall that prompted this (that was the scroll animation in `TranscriptView`).
+    let micLevelMonitor = AudioLevelMonitor()
+    let agentLevelMonitor = AudioLevelMonitor()
     private var currentAgentAudioTrack: (any AudioTrack)?
     private var cancellables = Set<AnyCancellable>()
 
@@ -135,14 +142,8 @@ final class VoiceSessionController: ObservableObject {
     }
 
     private func observe() {
-        micLevelMonitor.$level
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$micLevel)
-
-        agentLevelMonitor.$level
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$agentLevel)
-
+        // Deliberately no subscription to the level monitors here — see the note on their
+        // declarations. Views observe them directly.
         session.$agent
             .receive(on: DispatchQueue.main)
             .sink { [weak self] agent in
@@ -172,8 +173,16 @@ final class VoiceSessionController: ObservableObject {
     // MARK: - Derived state
 
     private func syncFromSession() {
-        messages = session.messages
-        recordTranscript()
+        // Gated on an actual change. This runs on every `session.objectWillChange`, which
+        // fires constantly while the agent replies — transcription deltas, agent state,
+        // track updates — and most of those leave `messages` untouched. Assigning
+        // unconditionally republished this controller each time, re-laying out the whole
+        // transcript for nothing.
+        let latest = session.messages
+        if latest != messages {
+            messages = latest
+            recordTranscript()
+        }
 
         // Latch failures. Reporting one usually means tearing the room down, and the
         // teardown clears the SDK's own error — so reading it live would flash the
@@ -304,8 +313,6 @@ final class VoiceSessionController: ObservableObject {
         phase = .idle
         isMicMuted = false
         micReleased = false
-        micLevel = 0
-        agentLevel = 0
         micLevelMonitor.reset()
         agentLevelMonitor.reset()
     }
@@ -327,7 +334,6 @@ final class VoiceSessionController: ObservableObject {
             // Tear the room down so we don't sit in a half-open session holding a mic.
             await self.session.end()
             self.micLevelMonitor.reset()
-            self.micLevel = 0
         }
     }
 
@@ -349,7 +355,6 @@ final class VoiceSessionController: ObservableObject {
             isMicMuted.toggle()
             if isMicMuted {
                 micLevelMonitor.reset()
-                micLevel = 0
             }
         } catch {
             micToggleError = error.localizedDescription

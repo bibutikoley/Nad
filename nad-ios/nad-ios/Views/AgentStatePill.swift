@@ -13,27 +13,43 @@ import SwiftUI
 
 struct AgentStatePill: View {
     var phase: VoiceSessionController.Phase
+    /// Muting is a client-side act: the agent stays in `listening` on the wire because
+    /// nothing tells it otherwise. So the pill has to be told separately, or it sits there
+    /// claiming the agent is listening while the mic is shut -- the same class of untruth
+    /// the phase enum above exists to prevent.
+    var isMuted: Bool = false
+
+    /// Only meaningful once the session is live; muting before that changes nothing the
+    /// user can act on, and "muted" would mask the more useful "connecting".
+    private var isMutedAndReady: Bool {
+        if case .ready = phase { return isMuted }
+        return false
+    }
 
     private var label: String {
+        if isMutedAndReady { return "muted" }
         switch phase {
-        case .idle: ""
-        case .connecting: "connecting"
-        case .warmingUp: "warming up"
-        case let .ready(state): state.rawValue
-        case .failed: "offline"
+        case .idle: return ""
+        case .connecting: return "connecting"
+        case .warmingUp: return "warming up"
+        case let .ready(state): return state.rawValue
+        case .failed: return "offline"
         }
     }
 
     private var dotColor: SwiftUI.Color {
+        if isMutedAndReady { return NadTheme.Color.mist }
         switch phase {
-        case .ready: NadTheme.Color.ember
-        case .failed: NadTheme.Color.fault
-        case .idle, .connecting, .warmingUp: NadTheme.Color.mist
+        case .ready: return NadTheme.Color.ember
+        case .failed: return NadTheme.Color.fault
+        case .idle, .connecting, .warmingUp: return NadTheme.Color.mist
         }
     }
 
+    /// Drives the ember tint on the capsule. Muted deliberately reads as not-live: the
+    /// warm glow is what says "this thing can hear you".
     private var isLive: Bool {
-        if case .ready = phase { return true }
+        if case .ready = phase { return !isMuted }
         return false
     }
 
@@ -86,6 +102,7 @@ struct AgentStatePill: View {
         AgentStatePill(phase: .ready(.listening))
         AgentStatePill(phase: .ready(.thinking))
         AgentStatePill(phase: .ready(.speaking))
+        AgentStatePill(phase: .ready(.listening), isMuted: true)
         AgentStatePill(phase: .failed("nope"))
     }
     .padding()

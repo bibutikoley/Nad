@@ -95,8 +95,6 @@ enum NadTheme {
         static let reaction = Animation.spring(response: 0.25, dampingFraction: 0.6)
         /// Slow ambient idle breathing loop.
         static let breathe = Animation.easeInOut(duration: 4).repeatForever(autoreverses: true)
-        /// One outward ripple on speech onset — literally "nad": a sound propagating.
-        static let ripple = Animation.easeOut(duration: 1.1)
     }
 }
 

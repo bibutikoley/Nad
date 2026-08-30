@@ -16,10 +16,7 @@ struct TranscriptView: View {
     /// A streaming reply mutates the *same* message, so its id never changes and an
     /// id-keyed onChange would let a long turn grow off the bottom of the screen.
     /// Keying on the text length too makes the view follow the reply as it arrives.
-    private var tail: String {
-        guard let last = messages.last else { return "" }
-        return "\(last.id)-\(lastText.count)-\(last.isFinal)"
-    }
+    private var tail: Int { lastText.count }
 
     private var lastText: String {
         switch messages.last?.content {
@@ -50,11 +47,22 @@ struct TranscriptView: View {
             .defaultScrollAnchor(.bottom)
             // Content dissolves under the header rather than colliding with it.
             .scrollEdgeEffectStyle(.soft, for: .top)
+            // A new message is a discrete event, so it gets the spring.
+            .onChange(of: messages.last?.id) { _, id in
+                guard let id else { return }
+                withAnimation(NadTheme.Motion.state) {
+                    proxy.scrollTo(id, anchor: .bottom)
+                }
+            }
+            // Growth within the current message does not. `tail` ticks on every character
+            // of a streaming reply, and animating each one started a fresh 0.4 s spring —
+            // dozens of them overlapping, which kept the whole view tree animating and
+            // re-laid out the entire transcript every frame. The cost scaled with the
+            // conversation, so by the second or third turn it pegged the main thread.
+            // An unanimated scroll tracks the text just as well and costs nothing.
             .onChange(of: tail) { _, _ in
                 guard let lastID = messages.last?.id else { return }
-                withAnimation(NadTheme.Motion.state) {
-                    proxy.scrollTo(lastID, anchor: .bottom)
-                }
+                proxy.scrollTo(lastID, anchor: .bottom)
             }
         }
     }

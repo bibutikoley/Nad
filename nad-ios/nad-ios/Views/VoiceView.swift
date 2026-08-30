@@ -22,12 +22,10 @@ struct VoiceView: View {
 
     @State private var showSettings = false
     @State private var showHistory = false
-    @State private var previousLiveState: AgentState?
-    @State private var rippleTrigger = 0
     @Namespace private var blobSpace
 
-    /// Once there's something to read, the blob gives up the stage and collapses into
-    /// the header beside the status pill.
+    /// Once there's something to read, the blob gives up the stage and shrinks into the
+    /// session controls at the bottom, between the mic and end buttons.
     private var hasTranscript: Bool { !controller.messages.isEmpty }
 
     var body: some View {
@@ -57,17 +55,6 @@ struct VoiceView: View {
                 }
             }
         }
-        .onChange(of: controller.phase) { _, newValue in
-            guard case let .ready(state) = newValue else {
-                // Don't carry a live state across sessions: it would swallow the first
-                // ripple of the next one.
-                previousLiveState = nil
-                return
-            }
-            guard state != previousLiveState else { return }
-            previousLiveState = state
-            rippleTrigger += 1
-        }
         .animation(NadTheme.Motion.state, value: hasTranscript)
         .preferredColorScheme(.dark)
     }
@@ -88,16 +75,8 @@ struct VoiceView: View {
 
             Spacer()
 
-            HStack(spacing: NadTheme.Space.xs) {
-                if controller.phase.isReady, hasTranscript {
-                    AudioReactiveBlob(controller: controller, rippleTrigger: rippleTrigger)
-                        .frame(width: 32, height: 32)
-                        .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
-                }
-
-                if controller.phase != .idle {
-                    AgentStatePill(phase: controller.phase)
-                }
+            if controller.phase != .idle {
+                AgentStatePill(phase: controller.phase, isMuted: controller.isMicMuted)
             }
 
             Spacer()
@@ -123,7 +102,7 @@ struct VoiceView: View {
         VStack(spacing: NadTheme.Space.xl) {
             Spacer()
 
-            VoiceVisualizer(level: 0.08, rippleTrigger: 0)
+            VoiceVisualizer(level: 0.08)
                 .frame(width: 240, height: 240)
                 .opacity(isBusy ? 0.45 : 1)
 
@@ -211,7 +190,12 @@ struct VoiceView: View {
     private var activeSession: some View {
         VStack(spacing: 0) {
             if !hasTranscript {
-                AudioReactiveBlob(controller: controller, rippleTrigger: rippleTrigger)
+                AudioReactiveBlob(
+                    mic: controller.micLevelMonitor,
+                    agent: controller.agentLevelMonitor,
+                    phase: controller.phase,
+                    isMuted: controller.isMicMuted
+                )
                     .frame(width: 190, height: 190)
                     .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
                     .padding(.top, NadTheme.Space.lg)
@@ -256,6 +240,31 @@ struct VoiceView: View {
                         .accessibilityLabel("End session")
                     }
                     .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
+                    // The stage blob's resting place once a transcript pushes it out of the
+                    // centre. Guarded on `hasTranscript` because the 190pt instance above is
+                    // what's on screen until then, and two views sharing a matchedGeometry
+                    // id at once trips an assertion.
+                    //
+                    // An overlay rather than a third element in the HStack. As a stack child
+                    // its size fed back into the row's sizing pass; an overlay is proposed
+                    // the row's size and can never influence it, so the blob is purely
+                    // drawn, never measured. It also keeps the row exactly as tall as the
+                    // buttons and lets the glow spill past them, which is what we wanted
+                    // anyway. Two frames: the inner one is the drawing surface, the outer
+                    // one the footprint the glow is allowed to overflow.
+                    .overlay {
+                        if hasTranscript {
+                            AudioReactiveBlob(
+                                mic: controller.micLevelMonitor,
+                                agent: controller.agentLevelMonitor,
+                                phase: controller.phase,
+                                isMuted: controller.isMicMuted
+                            )
+                            .frame(width: 124, height: 124)
+                            .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
+                            .allowsHitTesting(false)
+                        }
+                    }
                 }
             }
             .padding(NadTheme.Space.md)
@@ -306,18 +315,27 @@ struct VoiceView: View {
 /// blob. Reading the levels straight from `VoiceView` would re-render the header,
 /// transcript and composer at audio-buffer rate.
 private struct AudioReactiveBlob: View {
-    @ObservedObject var controller: VoiceSessionController
-    var rippleTrigger: Int
+    /// Subscribed to directly, not read off the controller. The controller is observed by
+    /// `VoiceView` itself, so routing audio levels through it invalidated the entire screen
+    /// — transcript included — on every audio buffer. Observing the monitors here keeps
+    /// that firehose contained to this view.
+    @ObservedObject var mic: AudioLevelMonitor
+    @ObservedObject var agent: AudioLevelMonitor
+    /// Plain values, not the controller: these change a handful of times per session, and
+    /// taking the whole object back would re-open the same invalidation path.
+    var phase: VoiceSessionController.Phase
+    var isMuted: Bool
+    var radiusRatio: CGFloat = 0.24
 
     private var level: Float {
-        if case .ready(.speaking) = controller.phase {
-            return controller.agentLevel
+        if case .ready(.speaking) = phase {
+            return agent.level
         }
-        return controller.isMicMuted ? 0 : controller.micLevel
+        return isMuted ? 0 : mic.level
     }
 
     var body: some View {
-        VoiceVisualizer(level: level, rippleTrigger: rippleTrigger)
+        VoiceVisualizer(level: level, radiusRatio: radiusRatio)
     }
 }
 
