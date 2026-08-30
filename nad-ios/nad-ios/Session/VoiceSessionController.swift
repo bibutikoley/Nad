@@ -81,15 +81,50 @@ final class VoiceSessionController: ObservableObject {
 
     private let settings: AppSettings
 
+    /// Capture settings for the published mic track.
+    ///
+    /// The SDK's defaults already enable echo cancellation, AGC and noise suppression; the
+    /// two that are off by default are the two that matter for a noisy room, so they have
+    /// to be asked for explicitly:
+    ///
+    /// - `highpassFilter` removes low-frequency rumble — fans, HVAC, traffic, handling
+    ///   noise. That energy carries no speech but does inflate the level the backend's VAD
+    ///   sees, which is exactly what makes the agent talk to an empty room.
+    /// - `typingNoiseDetection` suppresses key clicks.
+    ///
+    /// Every `*Mode` is left at `.automatic` on purpose. On iOS that resolves to Apple's
+    /// Voice-Processing I/O, which is hardware-integrated and materially better than the
+    /// WebRTC software APM — forcing `.webRTC` here would be a regression, not a tuning win.
+    ///
+    /// Note that AGC raises gain in a quiet room, lifting the noise floor with it. That is
+    /// why the backend gate (`nad-backend/noise_gate.py`) tracks the floor adaptively
+    /// instead of comparing against a fixed level: the two interact.
+    private static let audioCaptureOptions = AudioCaptureOptions(
+        echoCancellation: true,
+        autoGainControl: true,
+        noiseSuppression: true,
+        highpassFilter: true,
+        typingNoiseDetection: true
+    )
+
     init(settings: AppSettings, store: ConversationStore) {
         self.settings = settings
         self.store = store
         session = Session(
             tokenSource: NadTokenSource(settings: settings),
-            // preConnectAudio is deliberately off: its purpose is to buffer speech
-            // *before* the agent joins, which is exactly what we don't want when the
-            // mic is held closed until the agent is ready.
-            options: SessionOptions(preConnectAudio: false, agentConnectTimeout: 20)
+            options: SessionOptions(
+                // The Room is built by hand rather than defaulted, because passing one is
+                // the only way to reach RoomOptions — and RoomOptions is the only place
+                // the published mic track's capture settings can be configured.
+                room: Room(
+                    roomOptions: RoomOptions(defaultAudioCaptureOptions: Self.audioCaptureOptions)
+                ),
+                // preConnectAudio is deliberately off: its purpose is to buffer speech
+                // *before* the agent joins, which is exactly what we don't want when the
+                // mic is held closed until the agent is ready.
+                preConnectAudio: false,
+                agentConnectTimeout: 20
+            )
         )
         AudioManager.shared.add(localAudioRenderer: micLevelMonitor)
         observe()

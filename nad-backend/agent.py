@@ -16,13 +16,25 @@ one of the commands above directly).
 
 import logging
 import os
+import re
 
 import aiohttp
 from dotenv import load_dotenv
 from livekit import agents
-from livekit.agents import Agent, AgentServer, AgentSession, TurnHandlingOptions, inference, llm
+from livekit.agents import (
+    Agent,
+    AgentServer,
+    AgentSession,
+    TurnHandlingOptions,
+    UserInputTranscribedEvent,
+    inference,
+    llm,
+)
 from livekit.agents.types import ATTRIBUTE_AGENT_STATE
+from livekit.agents.voice import room_io
 from livekit.plugins import openai
+
+from noise_gate import AUDIO_DEBUG, NoiseGate, NoiseGatedSTT
 
 load_dotenv()
 
@@ -56,6 +68,47 @@ def _require_env(*names: str) -> dict[str, str]:
 ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_API_KEY")
 
 
+# Second line of defence behind noise_gate.py, which rejects on signal level alone. This one
+# reads the transcript, and so catches noise that was loud enough to pass but decoded to
+# nothing meaningful.
+#
+# The list is Parakeet-specific. Whisper's notorious noise hallucinations ("Thank you.",
+# "Subtitles by ...") come from its autoregressive decoder inventing fluent sentences;
+# Parakeet is a transducer and fails differently, emitting short spurious fragments instead.
+# A Whisper blocklist copied from elsewhere would be the wrong list here -- and README.md
+# documents Whisper as the multilingual alternative, so revisit this if STT_MODEL changes.
+_NOISE_TOKENS = frozenset({"uh", "um", "mm", "hmm", "mhm", "hm", "ah", "eh", "huh"})
+
+# Checked first, so a real one-word reply can never be caught by the list above. Short
+# answers are exactly what an over-eager filter breaks, and they matter in a voice UI.
+_ALWAYS_ALLOWED = frozenset(
+    {
+        "yes", "no", "yeah", "nope", "ok", "okay", "sure", "stop", "wait",
+        "hi", "hey", "hello", "thanks", "next", "back", "repeat", "again",
+    }
+)
+
+_WORD_RE = re.compile(r"[^\w']+")
+
+
+def _looks_like_noise(transcript: str) -> bool:
+    """True when a transcript is an artifact rather than something said to the agent."""
+    words = [word for word in _WORD_RE.split(transcript.lower()) if word]
+
+    if not words:
+        # Empty, or punctuation only. StreamAdapter already drops genuinely empty
+        # transcripts, so this catches the "." / "?" case.
+        return True
+
+    if len(words) > 1:
+        # Anything with real structure gets through: rejecting multi-word turns risks
+        # swallowing a genuine short question.
+        return False
+
+    word = words[0]
+    return word not in _ALWAYS_ALLOWED and word in _NOISE_TOKENS
+
+
 class NadAssistant(Agent):
     def __init__(self, chat_ctx: llm.ChatContext | None = None) -> None:
         super().__init__(
@@ -68,6 +121,31 @@ class NadAssistant(Agent):
             # genuinely remembers it rather than just being shown next to its transcript.
             chat_ctx=chat_ctx,
         )
+
+    async def on_user_turn_completed(
+        self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage
+    ) -> None:
+        """Drop turns that are room noise rather than speech aimed at the agent.
+
+        A backstop, not the primary defence -- that is noise_gate.py, which rejects before
+        a transcript exists at all. By the time this runs, preemptive generation (on by
+        default) has already spent one LLM call on the turn, so a rejection here wastes
+        work that a rejection in the gate does not. Nothing is spoken, because
+        preemptive_tts is off by default. If this starts firing often, tighten the gate
+        rather than widening the lists below.
+
+        StopResponse is the framework's sanctioned discard: livekit-agents catches it and
+        returns without generating a reply *and* without appending the message to chat_ctx,
+        so a rejected turn never pollutes the conversation history either.
+
+        Deliberately not gated on `new_message.transcript_confidence`: the openai STT plugin
+        never sets SpeechData.confidence, so it is always its 0.0 default and any threshold
+        on it would reject every turn.
+        """
+        transcript = new_message.text_content or ""
+        if _looks_like_noise(transcript):
+            logger.info("discarded noise turn: %r", transcript)
+            raise llm.StopResponse()
 
 
 server = AgentServer()
@@ -200,19 +278,43 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         # fast path for barge-in detection.
         vad=inference.VAD(
             model="silero",
-            min_speech_duration=0.05,
+            # A Silero window is 32 ms, so the 0.05 default latches on two consecutive
+            # windows -- a key press, a cup on a desk. The shortest utterance worth
+            # keeping ("yes") carries 250-350 ms of continuous energy, so 0.12 has
+            # roughly 2x headroom while still rejecting transients.
+            min_speech_duration=0.12,
             min_silence_duration=0.25,
-            activation_threshold=0.5,
+            # Nudged up from the 0.5 default, but deliberately not to 0.7+: Silero scores
+            # TV dialogue and second-party speech about as highly as the user, so a high
+            # threshold buys nothing there while it does start dropping soft onsets. The
+            # real rejection happens in noise_gate.py, which costs no latency.
+            activation_threshold=0.55,
+            # Pinned rather than left to derive (activation - 0.15 = 0.40). The wider
+            # hysteresis stops the raised activation threshold from chopping an utterance
+            # at a mid-word energy dip.
+            deactivation_threshold=0.35,
+            # Left at the default, but pinned because it is load-bearing twice over: it is
+            # the only thing protecting word onsets from being clipped off the WAV the
+            # StreamAdapter cuts, *and* noise_gate.py estimates the ambient level from
+            # exactly this pre-roll. Shrinking it silently degrades the gate.
+            prefix_padding_duration=0.5,
         ),
         # mlx-audio exposes an OpenAI-compatible /v1/audio/transcriptions.
         # The plugin treats non-realtime models as batch STT; the session wraps it
         # with a VAD StreamAdapter automatically.
-        stt=openai.STT(
-            model=ENV["STT_MODEL"],
-            base_url=SPEECH_BASE_URL,
-            api_key="local",
-            use_realtime=False,
-            language=STT_LANGUAGE,
+        #
+        # Wrapped in the noise gate so ambient room noise never reaches Parakeet: Silero
+        # fires on any energy transient, and a transducer will happily emit text for a fan.
+        # The gate holds per-room state, so it is built here (per job) and never shared.
+        stt=NoiseGatedSTT(
+            wrapped=openai.STT(
+                model=ENV["STT_MODEL"],
+                base_url=SPEECH_BASE_URL,
+                api_key="local",
+                use_realtime=False,
+                language=STT_LANGUAGE,
+            ),
+            gate=NoiseGate(),
         ),
         llm=openai.LLM(
             model=ENV["LLM_MODEL"],
@@ -238,6 +340,11 @@ async def entrypoint(ctx: agents.JobContext) -> None:
             # min_duration of detected speech. If the "interruption" turns out to be
             # a cough / backchannel (no transcript within the timeout), the agent
             # resumes where it left off.
+            #
+            # min_words is deliberately left at its 0 default. Raising it would make the
+            # agent wait for a batch-STT round trip before it stops talking -- a visible
+            # latency regression -- and resume_false_interruption below already undoes a
+            # barge-in caused by noise, which gets the same outcome for free.
             interruption={
                 "enabled": True,
                 "min_duration": 0.3,
@@ -247,8 +354,33 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         ),
     )
 
+    if AUDIO_DEBUG:
+        # Pairs with the per-segment logging in noise_gate.py: that shows every segment the
+        # gate saw, this shows the ones that made it all the way to a transcript. Together
+        # they are what the gate constants should be tuned against -- see README.md.
+        @session.on("user_input_transcribed")
+        def _log_transcript(ev: UserInputTranscribedEvent) -> None:
+            if ev.is_final:
+                logger.info("transcript accepted: %r", ev.transcript)
+
     # Publishes lk.agent.state = "listening", which now genuinely means ready.
-    await session.start(room=ctx.room, agent=NadAssistant(chat_ctx=chat_ctx))
+    await session.start(
+        room=ctx.room,
+        agent=NadAssistant(chat_ctx=chat_ctx),
+        room_options=room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                # Off, against the library default. The iPhone already runs Apple's
+                # Voice-Processing I/O (echo cancellation, noise suppression and AGC) before
+                # the audio ever leaves the device; livekit-agents then applies a *second*
+                # WebRTC AGC here, ahead of the VAD. Two cascaded gain controllers
+                # re-normalise an already-normalised signal, which lifts room noise toward
+                # speech level during the pauses -- exactly what makes Silero fire on a fan.
+                #
+                # Note this has no effect under `lk agent console`, which builds no RoomIO.
+                auto_gain_control=False,
+            ),
+        ),
+    )
 
     if chat_ctx is not None:
         await session.generate_reply(
