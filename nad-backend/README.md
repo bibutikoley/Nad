@@ -30,6 +30,7 @@ iOS client ever talks to directly. `scripts/dev.sh` runs agent.py + mlx-audio to
 ## First-time setup
 
 ```bash
+brew install livekit-cli       # the `lk` CLI — drives the agent worker (dev/start/console)
 cd nad-backend
 cp .env.example .env          # fill in LLM_BASE_URL / LLM_API_KEY / LLM_MODEL,
                                # LIVEKIT_URL / LIVEKIT_NODE_IP (your Mac's LAN IP,
@@ -51,16 +52,20 @@ The token server's image builds automatically on the first `docker compose up`. 
 `token_server.py`, it needs `docker compose up --build` — the script is baked into the image,
 not bind-mounted like `livekit.yaml`, so a plain `up` keeps running the old code.
 
-`scripts/dev.sh` starts `scripts/speech-server.sh` and `uv run agent.py dev` together (first
-request per model still downloads it from HF, same as running them separately). Ctrl+C stops
-both — and everything each one spawned, including `agent.py dev`'s own worker subprocess and
-`uvx`'s `mlx_audio.server` — and if either one exits on its own (crash), the script notices
-within a second and stops the other rather than leaving it running headless. Run them in
-separate terminals instead when you want to restart or watch one independently of the other:
+`scripts/dev.sh` starts `scripts/speech-server.sh` and `lk agent dev agent.py` together (first
+request per model still downloads it from HF, same as running them separately). It also sources
+`.env` and exports it into the shell first — `lk` itself needs `LIVEKIT_URL`/`LIVEKIT_API_KEY`/
+`LIVEKIT_API_SECRET` as real env vars before it gets anywhere near importing `agent.py`, so
+`agent.py`'s own `load_dotenv()` is too late for `lk`'s purposes (see the comment at the top of
+`agent.py`). Ctrl+C stops both — and everything each one spawned, including `lk`'s own `uv run`
+→ `python -m livekit.agents` chain and `uvx`'s `mlx_audio.server` — and if either one exits on
+its own (crash), the script notices within a second and stops the other rather than leaving it
+running headless. Run them in separate terminals instead when you want to restart or watch one
+independently of the other:
 
 ```bash
 scripts/speech-server.sh                  # mlx-audio (STT + TTS)
-uv run agent.py dev                       # agent worker
+set -a && source .env && set +a && lk agent dev agent.py   # agent worker
 ```
 
 Warm the speech models once so the first real turn isn't slow:
@@ -71,16 +76,23 @@ curl -s localhost:8000/v1/audio/speech -H 'content-type: application/json' \
 curl -s localhost:8000/v1/audio/transcriptions -F model=mlx-community/parakeet-tdt-0.6b-v3 -F file=@/path/to/any.wav -F response_format=json
 ```
 
+Check the TTS call actually returned audio, not just HTTP 200 — Kokoro can fail *inside* a
+streamed 200 response (e.g. a missing `misaki`/spaCy dependency; see `scripts/speech-server.sh`
+for what's pinned and why) and the connection just drops mid-body, which the agent worker
+surfaces as `APIConnectionError: peer closed connection without sending complete message body`.
+`curl -o /dev/null` above swallows that silently — pass `-w '%{size_download}\n'` (or open the
+saved file) if you want the check to actually catch it.
+
 Quick smoke test without the iOS app:
 
 ```bash
-uv run agent.py console        # talk to the agent from the terminal mic/speaker
+set -a && source .env && set +a && lk agent console agent.py   # talk to the agent from the terminal mic/speaker
 ```
 
-(`uv run agent.py dev|start|console` prints a `DeprecationWarning` for the built-in Python
-CLI — expected on `livekit-agents` 1.7.1. Its replacement's `console` mode requires the
-separate `lk` CLI driving a TCP dev channel rather than your terminal mic/speaker directly,
-so this project intentionally stays on the deprecated entrypoint for now.)
+(`lk` detects this is a `uv` project and runs `agent.py` inside its venv automatically — no
+need to `uv run` it yourself. `lk agent console` handles your terminal's mic/speaker directly,
+same as before; it's `livekit-agents`' own built-in `dev|start|console` CLI that's deprecated,
+which is why `agent.py` and `scripts/dev.sh` go through `lk` instead now.)
 
 Check the token endpoint is reachable and authenticated:
 
@@ -108,11 +120,12 @@ sidesteps Docker networking entirely on the Mac; keep compose for the real deplo
 If this Mac's LAN IP changes (new network, DHCP renewal), update both `LIVEKIT_URL` and
 `LIVEKIT_NODE_IP` in `.env` (`ipconfig getifaddr en0`).
 
-Not yet handled, since `nad-ios` has no networking code yet: iOS **App Transport Security**
-blocks cleartext `ws://`/`http://` to non-localhost hosts by default. Once the app makes its
-first request to this backend, add an `NSAppTransportSecurity` → `NSAllowsLocalNetworking`
-exception to `nad-ios/nad-ios/Info.plist` (plus the `NSLocalNetworkUsageDescription` string
-iOS 14+ prompts the user with) — or move both ends to TLS — or requests will silently fail.
+Handled on the client side now: `nad-ios/Info.plist` carries the `NSAppTransportSecurity` →
+`NSAllowsLocalNetworking` exception (iOS ATS otherwise blocks cleartext `ws://`/`http://` to
+non-localhost hosts), and `INFOPLIST_KEY_NSLocalNetworkUsageDescription` in the Xcode build
+settings supplies the string iOS 14+ prompts the user with on first connection. See
+`nad-ios/README.md` for what the app itself needs configured (the token-server URL and bearer
+token) before it can reach this backend at all.
 
 ## Exposing beyond the LAN (Tailscale Funnel)
 

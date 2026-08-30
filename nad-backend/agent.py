@@ -3,8 +3,15 @@
 Pipeline: LiveKit room audio -> VAD -> STT (mlx-audio) -> LLM (OpenAI-compatible)
           -> TTS (mlx-audio) -> back into the room.
 
-Run:  uv run agent.py dev      (local dev, auto-reload)
-      uv run agent.py start    (production)
+Run:  lk agent dev agent.py       (local dev, auto-reload)
+      lk agent start agent.py     (production)
+      lk agent console agent.py   (talk to it from your terminal mic/speaker)
+
+`lk` (the LiveKit CLI, `brew install livekit-cli`) needs LIVEKIT_URL / LIVEKIT_API_KEY /
+LIVEKIT_API_SECRET as real shell env vars, not just in .env — it reads them itself before
+it ever gets to importing this module, so `load_dotenv()` below is too late for `lk`'s own
+use of them (scripts/dev.sh sources .env for this reason; export them yourself if running
+one of the commands above directly).
 """
 
 import os
@@ -34,7 +41,7 @@ def _require_env(*names: str) -> dict[str, str]:
 
 
 # Checked at import time (not inside entrypoint, which only runs per job) so a
-# misconfigured worker fails `uv run agent.py dev` immediately instead of only
+# misconfigured worker fails `lk agent dev agent.py` immediately instead of only
 # blowing up when the first user joins.
 ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_API_KEY")
 
@@ -111,12 +118,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
     await session.start(room=ctx.room, agent=NadAssistant())
     await session.generate_reply(instructions="Greet the user in one short sentence.")
 
-
-if __name__ == "__main__":
-    # agents.cli.run_app() is deprecated in favor of `python -m livekit.agents` /
-    # the `lk` CLI, but its replacement's "console" mode drives the separate Go
-    # `lk` CLI over a TCP dev channel rather than the terminal mic/speaker directly,
-    # and that CLI isn't part of this project. Keeping run_app() (still functional,
-    # just warns) preserves the `uv run agent.py dev|start|console` workflow in the
-    # README without adding that dependency.
-    agents.cli.run_app(server)
+# No __main__ block: run this via `lk agent dev|start|console agent.py` (see
+# README.md), which imports this module and discovers `server` directly rather
+# than executing the file as a script. `lk` wraps `uv run` automatically when it
+# detects a uv project, so it picks up this venv without extra setup.

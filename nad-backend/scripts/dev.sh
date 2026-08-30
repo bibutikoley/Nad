@@ -7,13 +7,24 @@
 set -o pipefail
 cd "$(dirname "$0")/.."
 
+# `lk` (the LiveKit CLI driving `lk agent dev` below) reads LIVEKIT_URL /
+# LIVEKIT_API_KEY / LIVEKIT_API_SECRET from its own process environment before
+# it ever imports agent.py — agent.py's own load_dotenv() runs too late for lk's
+# purposes, so they're exported here instead.
+[ -f .env ] || { echo "nad-backend/.env not found — copy .env.example to .env first." >&2; exit 1; }
+set -a
+# shellcheck source=/dev/null
+source .env
+set +a
+
 pids=()
 names=()
 last_known=""   # snapshot of every live descendant, refreshed each poll — see below
 
-# Lists every (transitive) child of a pid — `uv run` and `uvx` both fork a child
-# to actually run the tool rather than exec'ing into it, so the top-level PID
-# alone isn't enough to reach the real speech server / agent process.
+# Lists every (transitive) child of a pid — `uvx`, and `lk agent dev` (which
+# itself shells out through `uv run`), each fork a child to actually run the
+# tool rather than exec'ing into it, so the top-level PID alone isn't enough to
+# reach the real speech server / agent process.
 descendants_of() {
   local pid="$1" child
   for child in $(pgrep -P "$pid" 2>/dev/null); do
@@ -50,7 +61,7 @@ trap cleanup INT TERM EXIT
 
 scripts/speech-server.sh &
 pids+=("$!"); names+=("speech server")
-uv run agent.py dev &
+lk agent dev agent.py &
 pids+=("$!"); names+=("agent worker")
 
 # Poll rather than `wait -n` (bash 4.3+ only — macOS ships bash 3.2 at /bin/bash):
