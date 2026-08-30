@@ -32,6 +32,12 @@ nad-ios/**/.build/
 # Note: Package.resolved is intentionally NOT ignored — it pins dependency
 # versions and should be committed for an app target.
 
+# nad-ios backend config: the token-server URL + TOKEN_SERVER_AUTH_TOKEN, compiled
+# directly into the app (see BackendConfig.example.swift.txt for the template and
+# nad-backend/.env.example for the paired server-side secret). Same shape as
+# nad-backend's own .env / .env.example split below.
+nad-ios/nad-ios/Config/BackendConfig.swift
+
 # CocoaPods
 # Uncomment only if CocoaPods is adopted and the team agrees not to vendor Pods/
 # nad-ios/**/Pods/

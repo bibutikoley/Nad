@@ -6,7 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9791C59EAA09E291F7FDCB9C /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = D88DF36AC8556327A5EC7E7B /* LiveKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		267A25ACAA221110B7F6767D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2FA5243C3043622A00942C6F /* nad-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "nad-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -23,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9791C59EAA09E291F7FDCB9C /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,6 +38,7 @@
 		2FA524333043622A00942C6F = {
 			isa = PBXGroup;
 			children = (
+				267A25ACAA221110B7F6767D /* Info.plist */,
 				2FA5243E3043622A00942C6F /* nad-ios */,
 				2FA5243D3043622A00942C6F /* Products */,
 			);
@@ -65,6 +72,7 @@
 			);
 			name = "nad-ios";
 			packageProductDependencies = (
+				D88DF36AC8556327A5EC7E7B /* LiveKit */,
 			);
 			productName = "nad-ios";
 			productReference = 2FA5243C3043622A00942C6F /* nad-ios.app */;
@@ -94,6 +102,9 @@
 			);
 			mainGroup = 2FA524333043622A00942C6F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E8DFF105D678464D2C4B3CC9 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2FA5243D3043622A00942C6F /* Products */;
 			projectDirPath = "";
@@ -256,6 +267,9 @@
 				DEVELOPMENT_TEAM = HJHM77M4C2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nad connects to your self-hosted voice agent over the local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Nad needs your microphone to talk with the voice agent.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +302,9 @@
 				DEVELOPMENT_TEAM = HJHM77M4C2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nad connects to your self-hosted voice agent over the local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Nad needs your microphone to talk with the voice agent.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +349,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E8DFF105D678464D2C4B3CC9 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D88DF36AC8556327A5EC7E7B /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E8DFF105D678464D2C4B3CC9 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2FA524343043622A00942C6F /* Project object */;
 }

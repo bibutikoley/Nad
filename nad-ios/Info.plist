@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	nad-backend's token server binds 0.0.0.0 and is reached over the LAN (see
+	nad-backend/README.md → "Connecting from a physical iPhone"), so ATS's default
+	block on cleartext ws://http:// to non-localhost hosts needs this exception.
+	NSLocalNetworkUsageDescription lives as an INFOPLIST_KEY_* build setting instead
+	of here, so it stays next to the other INFOPLIST_KEY_* entries Xcode generates.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

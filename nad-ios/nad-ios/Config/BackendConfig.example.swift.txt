@@ -1,0 +1,41 @@
+//
+//  BackendConfig.swift
+//  nad-ios
+//
+//  Template — copy this file to BackendConfig.swift (same folder) and fill in the
+//  two values below. BackendConfig.swift is git-ignored (see .gitignore) so the
+//  real bearer secret never lands in the repo; this .txt template is the committed
+//  stand-in, same shape as nad-backend/.env.example → nad-backend/.env.
+//
+//  Named "BackendConfig.example.swift.txt" rather than ".swift" on purpose: this
+//  folder is a file-system-synchronized Xcode group, so a second .swift file
+//  defining `enum BackendConfig` would join the build and collide with the real
+//  one. Rename happens by hand, not by Xcode.
+//
+//      cp BackendConfig.example.swift.txt BackendConfig.swift
+//
+//  Both values come from nad-backend/.env on the machine running the backend:
+//    - baseURL:   built from TOKEN_SERVER_PORT and that Mac's LAN IP — the same
+//                 address nad-backend/README.md has you find with
+//                 `ipconfig getifaddr en0` for LIVEKIT_URL. Scheme is http, not ws.
+//    - authToken: TOKEN_SERVER_AUTH_TOKEN, verbatim.
+//
+//  This is the pre-shared secret token_server.py requires as
+//  `Authorization: Bearer <TOKEN_SERVER_AUTH_TOKEN>` (see token_server.py:44-53) —
+//  it is NOT the LiveKit join token. The join token is minted per-session by the
+//  server and never touches this file or the UI; see NadTokenSource.swift.
+//
+
+import Foundation
+
+// nonisolated: this project defaults new types to @MainActor isolation, but these
+// are plain constants read from a background context in NadTokenSource.fetch(_:).
+nonisolated enum BackendConfig {
+    /// The token server's base URL, e.g. "http://192.168.1.23:8787". No trailing slash.
+    /// Settings can override this at runtime (for when the Mac's LAN IP changes);
+    /// this is only the compiled-in default.
+    static let baseURL = URL(string: "http://192.168.1.23:8787")!
+
+    /// TOKEN_SERVER_AUTH_TOKEN from nad-backend/.env. Never shown in the UI.
+    static let authToken = "REPLACE_WITH_TOKEN_SERVER_AUTH_TOKEN"
+}

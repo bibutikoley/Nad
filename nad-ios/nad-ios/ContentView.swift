@@ -2,20 +2,25 @@
 //  ContentView.swift
 //  nad-ios
 //
-//  Created by Bibuti Koley on 30/08/26.
+//  Composition root: owns the one AppSettings instance and the one
+//  VoiceSessionController built from it, so Settings edits and the session's
+//  token source always agree.
 //
 
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var settings: AppSettings
+    @StateObject private var controller: VoiceSessionController
+
+    init() {
+        let settings = AppSettings()
+        _settings = StateObject(wrappedValue: settings)
+        _controller = StateObject(wrappedValue: VoiceSessionController(settings: settings))
+    }
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        VoiceView(controller: controller, settings: settings)
     }
 }
 
