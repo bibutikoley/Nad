@@ -1,0 +1,411 @@
+# One condition per line; blank lines and `#` comments are ignored. Spelling here is the
+# spelling that ends up in the transcript. Multi-word names are fine (matched as a phrase,
+# up to MAX_WINDOW words). Add whatever your domain needs.
+#
+# Chosen for how badly a transducer mangles them, not for how common they are: long Greek
+# and Latin compounds ("gastroesophageal", "thrombocytopenia") are what an ASR with no
+# medical vocabulary splits into English-looking pieces. Everyday one-word conditions that
+# a general model already gets right ("cough", "rash", "fever") are deliberately absent --
+# they add fuzzy attractors that could capture ordinary speech and buy nothing.
+#
+# Anything added here must survive test_drug_lexicon.py::test_ordinary_speech_is_untouched.
+# A near-miss against plain English corrupts the transcript, which is worse than failing to
+# correct a term: see the "an email"/anemia case that set MIN_FUZZY_LEN.
+
+# --- cardiovascular ---
+atrial fibrillation
+atrial flutter
+myocardial infarction
+angina pectoris
+unstable angina
+congestive heart failure
+cardiomyopathy
+hypertrophic cardiomyopathy
+endocarditis
+pericarditis
+myocarditis
+arrhythmia
+bradycardia
+tachycardia
+supraventricular tachycardia
+ventricular fibrillation
+atherosclerosis
+arteriosclerosis
+hypertension
+hypotension
+orthostatic hypotension
+pulmonary hypertension
+hyperlipidemia
+hypercholesterolemia
+hypertriglyceridemia
+dyslipidemia
+aortic stenosis
+mitral regurgitation
+mitral valve prolapse
+aortic aneurysm
+deep vein thrombosis
+pulmonary embolism
+thrombophlebitis
+peripheral artery disease
+varicose veins
+cardiac arrest
+left ventricular hypertrophy
+
+# --- endocrine / metabolic ---
+diabetes mellitus
+type one diabetes
+type two diabetes
+gestational diabetes
+diabetic ketoacidosis
+diabetic neuropathy
+diabetic retinopathy
+diabetic nephropathy
+hyperglycemia
+hypoglycemia
+insulin resistance
+metabolic syndrome
+hypothyroidism
+hyperthyroidism
+thyroiditis
+Hashimoto thyroiditis
+Graves disease
+goiter
+thyrotoxicosis
+Cushing syndrome
+Addison disease
+hyperparathyroidism
+hypoparathyroidism
+polycystic ovary syndrome
+adrenal insufficiency
+acromegaly
+pheochromocytoma
+hyperkalemia
+hypokalemia
+hyponatremia
+hypernatremia
+hypercalcemia
+hypocalcemia
+hypomagnesemia
+osteoporosis
+osteopenia
+obesity
+gout
+hyperuricemia
+
+# --- respiratory ---
+asthma
+chronic obstructive pulmonary disease
+emphysema
+chronic bronchitis
+bronchiectasis
+pneumonia
+aspiration pneumonia
+bronchiolitis
+pleurisy
+pleural effusion
+pneumothorax
+pulmonary fibrosis
+idiopathic pulmonary fibrosis
+sarcoidosis
+cystic fibrosis
+tuberculosis
+sleep apnea
+obstructive sleep apnea
+central sleep apnea
+respiratory failure
+acute respiratory distress syndrome
+sinusitis
+rhinitis
+allergic rhinitis
+pharyngitis
+laryngitis
+tonsillitis
+croup
+influenza
+pertussis
+
+# --- gastrointestinal ---
+gastroesophageal reflux disease
+gastritis
+gastroenteritis
+peptic ulcer disease
+duodenal ulcer
+esophagitis
+Barrett esophagus
+dysphagia
+irritable bowel syndrome
+inflammatory bowel disease
+Crohn disease
+ulcerative colitis
+diverticulitis
+diverticulosis
+celiac disease
+appendicitis
+cholecystitis
+cholelithiasis
+pancreatitis
+hepatitis
+cirrhosis
+fatty liver disease
+nonalcoholic steatohepatitis
+hemorrhoids
+constipation
+diarrhea
+colitis
+gastroparesis
+hiatal hernia
+inguinal hernia
+bowel obstruction
+lactose intolerance
+
+# --- neurological ---
+migraine
+cluster headache
+tension headache
+epilepsy
+seizure disorder
+status epilepticus
+stroke
+ischemic stroke
+hemorrhagic stroke
+transient ischemic attack
+subarachnoid hemorrhage
+intracerebral hemorrhage
+multiple sclerosis
+Parkinson disease
+Alzheimer disease
+dementia
+vascular dementia
+Lewy body dementia
+frontotemporal dementia
+amyotrophic lateral sclerosis
+myasthenia gravis
+Guillain Barre syndrome
+peripheral neuropathy
+neuropathy
+neuralgia
+trigeminal neuralgia
+sciatica
+radiculopathy
+carpal tunnel syndrome
+Bell palsy
+encephalitis
+meningitis
+hydrocephalus
+concussion
+traumatic brain injury
+vertigo
+benign paroxysmal positional vertigo
+Meniere disease
+tinnitus
+narcolepsy
+restless legs syndrome
+essential tremor
+Huntington disease
+cerebral palsy
+neurofibromatosis
+
+# --- psychiatric ---
+major depressive disorder
+bipolar disorder
+generalized anxiety disorder
+panic disorder
+social anxiety disorder
+obsessive compulsive disorder
+post traumatic stress disorder
+schizophrenia
+schizoaffective disorder
+attention deficit hyperactivity disorder
+autism spectrum disorder
+anorexia nervosa
+bulimia nervosa
+binge eating disorder
+insomnia
+substance use disorder
+alcohol use disorder
+opioid use disorder
+delirium
+psychosis
+
+# --- musculoskeletal / rheumatologic ---
+osteoarthritis
+rheumatoid arthritis
+psoriatic arthritis
+juvenile idiopathic arthritis
+ankylosing spondylitis
+fibromyalgia
+systemic lupus erythematosus
+lupus nephritis
+scleroderma
+Sjogren syndrome
+polymyalgia rheumatica
+giant cell arteritis
+vasculitis
+dermatomyositis
+polymyositis
+tendinitis
+tendinopathy
+bursitis
+plantar fasciitis
+rotator cuff tear
+epicondylitis
+scoliosis
+kyphosis
+spinal stenosis
+herniated disc
+degenerative disc disease
+osteomyelitis
+rhabdomyolysis
+
+# --- renal / urologic ---
+chronic kidney disease
+acute kidney injury
+end stage renal disease
+glomerulonephritis
+nephrotic syndrome
+nephrolithiasis
+kidney stones
+pyelonephritis
+urinary tract infection
+cystitis
+urethritis
+benign prostatic hyperplasia
+prostatitis
+urinary incontinence
+overactive bladder
+hydronephrosis
+polycystic kidney disease
+erectile dysfunction
+
+# --- hematologic / oncologic ---
+anemia
+iron deficiency anemia
+sickle cell disease
+sickle cell anemia
+thalassemia
+aplastic anemia
+hemolytic anemia
+pernicious anemia
+hemophilia
+thrombocytopenia
+idiopathic thrombocytopenic purpura
+neutropenia
+leukopenia
+pancytopenia
+polycythemia vera
+leukemia
+acute lymphoblastic leukemia
+acute myeloid leukemia
+chronic lymphocytic leukemia
+chronic myeloid leukemia
+lymphoma
+Hodgkin lymphoma
+non Hodgkin lymphoma
+multiple myeloma
+myelodysplastic syndrome
+carcinoma
+adenocarcinoma
+melanoma
+sarcoma
+metastasis
+neutropenic fever
+hemochromatosis
+von Willebrand disease
+
+# --- infectious ---
+sepsis
+septic shock
+bacteremia
+cellulitis
+abscess
+endocarditis prophylaxis
+osteomyelitis
+shingles
+herpes zoster
+varicella
+mononucleosis
+candidiasis
+aspergillosis
+histoplasmosis
+Lyme disease
+malaria
+dengue
+typhoid
+cholera
+tetanus
+rabies
+measles
+mumps
+rubella
+methicillin resistant Staphylococcus aureus
+Clostridioides difficile
+
+# --- dermatologic ---
+eczema
+atopic dermatitis
+contact dermatitis
+seborrheic dermatitis
+psoriasis
+urticaria
+rosacea
+acne vulgaris
+vitiligo
+alopecia
+alopecia areata
+hidradenitis suppurativa
+impetigo
+folliculitis
+onychomycosis
+tinea
+pemphigus
+basal cell carcinoma
+squamous cell carcinoma
+
+# --- ophthalmic / ENT ---
+glaucoma
+cataract
+macular degeneration
+age related macular degeneration
+conjunctivitis
+uveitis
+keratitis
+blepharitis
+retinal detachment
+diabetic macular edema
+amblyopia
+strabismus
+otitis media
+otitis externa
+mastoiditis
+cholesteatoma
+sensorineural hearing loss
+presbycusis
+
+# --- obstetric / gynecologic ---
+preeclampsia
+eclampsia
+endometriosis
+adenomyosis
+uterine fibroids
+dysmenorrhea
+menorrhagia
+amenorrhea
+menopause
+infertility
+ectopic pregnancy
+placenta previa
+hyperemesis gravidarum
+pelvic inflammatory disease
+
+# --- immunologic / other ---
+anaphylaxis
+angioedema
+immunodeficiency
+amyloidosis
+graft versus host disease
+chronic fatigue syndrome
+myalgic encephalomyelitis
+malnutrition
+dehydration
+cachexia
+failure to thrive

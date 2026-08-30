@@ -17,10 +17,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from livekit import rtc
-from livekit.agents import stt
+from livekit.agents import llm, stt
 from livekit.agents.types import NOT_GIVEN
 
-from agent import _looks_like_noise
+import agent as agent_mod
+from agent import DrugCorrectedSTT, NadAssistant, _looks_like_noise
+from drug_lexicon import DrugLexicon
 from noise_gate import (
     FLOOR_CLAMP,
     MIN_VOICED_MS,
@@ -304,6 +306,135 @@ def test_wrapper_forwards_identity_and_capabilities():
     assert gated.capabilities.streaming is False
     assert gated.model == "stub-model"
     assert gated.provider == "stub-provider"
+
+
+# --- DrugCorrectedSTT -----------------------------------------------------------------
+
+
+class _MisheardSTT(_StubSTT):
+    async def _recognize_impl(self, buffer, *, language=NOT_GIVEN, conn_options):
+        self.calls += 1
+        return stt.SpeechEvent(
+            type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+            alternatives=[stt.SpeechData(language="en", text="I take met formin daily")],
+        )
+
+
+async def test_drug_names_are_corrected_on_the_final_transcript():
+    inner = _MisheardSTT()
+    corrected = DrugCorrectedSTT(wrapped=inner, lexicon=DrugLexicon(["metformin"]))
+    speech = _segment(ambient_dbfs=-55.0, body_dbfs=-25.0, body_s=0.8)
+
+    assert await _recognize(corrected, speech) == "I take metformin daily"
+    assert inner.calls == 1
+
+
+async def test_rejected_segments_stay_empty_through_the_corrector():
+    inner = _MisheardSTT()
+    corrected = DrugCorrectedSTT(wrapped=inner, lexicon=DrugLexicon(["metformin"]))
+    flat = _segment(ambient_dbfs=-52.0, body_dbfs=-52.0, body_s=1.0)
+
+    assert await _recognize(corrected, flat) == ""
+    assert inner.calls == 0
+
+
+# --- uncertainty read-back ------------------------------------------------------------
+#
+# The lexicon's weakest tier ("spine") matches on consonants alone, having thrown the vowels
+# away. MEDICAL_CONFIRM turns those into a spoken read-back rather than a silent assumption;
+# the plumbing below is what carries them from the STT to the agent.
+
+
+class _SpineMisheardSTT(_StubSTT):
+    """Returns "azampic" -- a vowel-mangled Ozempic that only the spine tier recovers."""
+
+    async def _recognize_impl(self, buffer, *, language=NOT_GIVEN, conn_options=None):
+        self.calls += 1
+        return stt.SpeechEvent(
+            type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+            alternatives=[stt.SpeechData(language="en", text="I started azampic")],
+        )
+
+
+async def test_spine_matches_are_flagged_as_uncertain():
+    uncertain: list[str] = []
+    corrected = DrugCorrectedSTT(
+        wrapped=_SpineMisheardSTT(), lexicon=DrugLexicon(["Ozempic"]), uncertain=uncertain
+    )
+    speech = _segment(ambient_dbfs=-55.0, body_dbfs=-25.0, body_s=0.8)
+
+    assert await _recognize(corrected, speech) == "I started Ozempic"
+    assert uncertain == ["Ozempic"]
+
+
+async def test_confident_matches_are_not_flagged():
+    # An exact fold match is not in doubt. Flagging it would make the read-back habit
+    # meaningless, so only the spine tier may populate the list.
+    uncertain: list[str] = []
+    corrected = DrugCorrectedSTT(
+        wrapped=_MisheardSTT(), lexicon=DrugLexicon(["metformin"]), uncertain=uncertain
+    )
+    speech = _segment(ambient_dbfs=-55.0, body_dbfs=-25.0, body_s=0.8)
+
+    assert await _recognize(corrected, speech) == "I take metformin daily"
+    assert uncertain == []
+
+
+async def test_rejected_segment_flags_nothing():
+    uncertain: list[str] = []
+    corrected = DrugCorrectedSTT(
+        wrapped=_SpineMisheardSTT(), lexicon=DrugLexicon(["Ozempic"]), uncertain=uncertain
+    )
+    flat = _segment(ambient_dbfs=-52.0, body_dbfs=-52.0, body_s=1.0)
+
+    assert await _recognize(corrected, flat) == ""
+    assert uncertain == []
+
+
+async def test_confirmation_note_is_injected_for_uncertain_terms(monkeypatch):
+    # The integration point: the list DrugCorrectedSTT fills is the list NadAssistant drains.
+    # Unit-testing the two halves separately would not catch them being wired to different
+    # lists, which is the way this actually breaks.
+    monkeypatch.setattr(agent_mod, "MEDICAL_CONFIRM", True)
+    uncertain = ["Ozempic"]
+    assistant = NadAssistant(uncertain=uncertain)
+    ctx = llm.ChatContext.empty()
+
+    await assistant.on_user_turn_completed(
+        ctx, llm.ChatMessage(role="user", content=["I started Ozempic last month"])
+    )
+
+    notes = [i for i in ctx.items if getattr(i, "role", None) == "system"]
+    assert len(notes) == 1
+    assert "Ozempic" in notes[0].text_content
+    assert uncertain == [], "must drain, or the next turn re-asks about this one"
+
+
+async def test_no_note_when_confirmation_is_off(monkeypatch):
+    monkeypatch.setattr(agent_mod, "MEDICAL_CONFIRM", False)
+    uncertain = ["Ozempic"]
+    ctx = llm.ChatContext.empty()
+
+    await NadAssistant(uncertain=uncertain).on_user_turn_completed(
+        ctx, llm.ChatMessage(role="user", content=["I started Ozempic last month"])
+    )
+
+    assert not [i for i in ctx.items if getattr(i, "role", None) == "system"]
+    assert uncertain == []
+
+
+async def test_discarded_noise_turn_drops_its_uncertain_terms(monkeypatch):
+    # The turn never reaches the LLM, so a confirmation about it would arrive attached to
+    # whatever the user says next.
+    monkeypatch.setattr(agent_mod, "MEDICAL_CONFIRM", True)
+    uncertain = ["Ozempic"]
+
+    with pytest.raises(llm.StopResponse):
+        await NadAssistant(uncertain=uncertain).on_user_turn_completed(
+            llm.ChatContext.empty(), llm.ChatMessage(role="user", content=["uh"])
+        )
+
+    assert uncertain == []
 
 
 # --- transcript gate ------------------------------------------------------------------

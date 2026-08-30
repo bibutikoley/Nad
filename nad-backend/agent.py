@@ -17,6 +17,8 @@ one of the commands above directly).
 import logging
 import os
 import re
+from pathlib import Path
+from urllib.parse import urlencode
 
 import aiohttp
 from dotenv import load_dotenv
@@ -25,15 +27,20 @@ from livekit.agents import (
     Agent,
     AgentServer,
     AgentSession,
+    MetricsCollectedEvent,
     TurnHandlingOptions,
     UserInputTranscribedEvent,
     inference,
     llm,
+    stt,
 )
-from livekit.agents.types import ATTRIBUTE_AGENT_STATE
+from livekit.agents.metrics import EOUMetrics, LLMMetrics, TTSMetrics
+from livekit.agents.types import ATTRIBUTE_AGENT_STATE, NOT_GIVEN
 from livekit.agents.voice import room_io
 from livekit.plugins import openai
 
+from drug_lexicon import DEFAULT_LEXICONS, DrugLexicon
+from dual_stt import DualSTT
 from noise_gate import AUDIO_DEBUG, NoiseGate, NoiseGatedSTT
 
 load_dotenv()
@@ -49,6 +56,33 @@ logger = logging.getLogger("nad")
 STT_BASE_URL = os.environ.get("STT_BASE_URL") or "http://localhost:8001/v1"
 TTS_BASE_URL = os.environ.get("TTS_BASE_URL") or "http://localhost:8000/v1"
 STT_LANGUAGE = os.environ.get("STT_LANGUAGE", "en")
+# Medical-term post-correction (drug_lexicon.py): drug names *and* condition names, since
+# a transducer mangles both the same way. Empty string disables it; otherwise it is an
+# os.pathsep-separated list of name files, defaulting to the two shipped in data/. Applied
+# to the final transcript, so the corrected text is what the LLM reads *and* what the
+# client shows -- one path, not two.
+MEDICAL_LEXICON = os.environ.get(
+    "MEDICAL_LEXICON", os.pathsep.join(str(p) for p in DEFAULT_LEXICONS)
+)
+# Read back medical terms the lexicon recovered on weak evidence, instead of assuming them.
+#
+# No amount of lexicon work makes recognition perfect -- the vendor measures ~97.6% recall on
+# medical terms, and the tiers in drug_lexicon.py are already at the point where more recall
+# costs precision (see its `skeleton` docstring for the trade that was measured and refused).
+# What is left is not hearing better but *failing louder*: a term recovered from consonants
+# alone is exactly the case where read-back, standard practice for spoken medication orders,
+# turns a silent error into a caught one.
+#
+# Off by default because it changes how the agent talks, and because on the measured runs it
+# would have fired on a small minority of turns -- worth it when transcripts are clinical,
+# noise when they are not. Only "spine"-tier corrections qualify; an exact or close fuzzy
+# match is not in doubt and must never trigger a confirmation, or the habit stops meaning
+# anything.
+MEDICAL_CONFIRM = os.environ.get("MEDICAL_CONFIRM", "").lower() in ("1", "true", "yes")
+# A *streaming* model served by mlx-audio's /v1/realtime, used only to show words as they
+# are spoken (interim transcripts). The batch model above still produces the transcript
+# the LLM reads. Empty disables it and the client sees each utterance arrive whole.
+INTERIM_STT_MODEL = os.environ.get("INTERIM_STT_MODEL", "")
 
 # Where to collect a transcript the client parked for a resumed conversation. The token
 # server runs in Docker with 8787 published, so localhost works from this host process.
@@ -138,8 +172,72 @@ def _looks_like_noise(transcript: str) -> bool:
     return words[0] not in _ALWAYS_ALLOWED and words[0] in _NOISE_TOKENS
 
 
+def _with_interim(batch_stt: stt.STT, *, vad: inference.VAD) -> stt.STT:
+    """Adds live interim transcripts on top of a batch STT, if INTERIM_STT_MODEL is set."""
+    if not INTERIM_STT_MODEL:
+        return batch_stt
+    interim = openai.STT(
+        model=INTERIM_STT_MODEL,
+        # The realtime endpoint lives on the mlx-audio server, next to TTS.
+        base_url=TTS_BASE_URL,
+        api_key="local",
+        use_realtime=True,
+        language=STT_LANGUAGE,
+        # The server runs its own Silero to decide when a turn ends and emits a transcript
+        # for it; DualSTT drops that transcript and keeps only the deltas, so this only
+        # needs to be loose enough not to cut a sentence in half.
+        turn_detection={
+            "type": "server_vad",
+            "threshold": 0.5,
+            "prefix_padding_ms": 300,
+            "silence_duration_ms": 500,
+        },
+    )
+    return DualSTT(final=batch_stt, interim=interim, vad=vad)
+
+
+class DrugCorrectedSTT(NoiseGatedSTT):
+    """NoiseGatedSTT plus medical-term correction on whatever the gate lets through.
+
+    Sits on top of the gate rather than beside it so a rejected segment (empty transcript)
+    never reaches the lexicon, and so the pass-throughs the StreamAdapter relies on are
+    inherited rather than duplicated.
+    """
+
+    def __init__(self, *, lexicon: DrugLexicon, uncertain: list[str] | None = None, **kw) -> None:
+        super().__init__(**kw)
+        self._lexicon = lexicon
+        # Shared with NadAssistant, which drains it in on_user_turn_completed. A plain list
+        # rather than anything synchronised: recognition and turn completion are sequential
+        # for a given turn, and the cost of a race is a confirmation asked one turn late.
+        self._uncertain = uncertain if uncertain is not None else []
+
+    async def _recognize_impl(self, buffer, *, language=NOT_GIVEN, conn_options):
+        event = await super()._recognize_impl(
+            buffer, language=language, conn_options=conn_options
+        )
+        for alt in event.alternatives:
+            corrections = self._lexicon.find(alt.text)
+            if corrections:
+                logger.info(
+                    "medical lexicon: %s",
+                    "; ".join(
+                        f"{c.heard!r} -> {c.drug} ({c.score:.2f}, {c.tier})"
+                        for c in corrections
+                    ),
+                )
+                alt.text = self._lexicon.correct(alt.text)
+                self._uncertain.extend(c.drug for c in corrections if c.tier == "spine")
+        return event
+
+
 class NadAssistant(Agent):
-    def __init__(self, chat_ctx: llm.ChatContext | None = None) -> None:
+    def __init__(
+        self,
+        chat_ctx: llm.ChatContext | None = None,
+        uncertain: list[str] | None = None,
+    ) -> None:
+        self._uncertain = uncertain if uncertain is not None else []
         super().__init__(
             instructions=(
                 "You are Nad, a friendly real-time voice assistant. "
@@ -174,7 +272,25 @@ class NadAssistant(Agent):
         transcript = new_message.text_content or ""
         if _looks_like_noise(transcript):
             logger.info("discarded noise turn: %r", transcript)
+            self._uncertain.clear()  # the turn is gone; its corrections go with it
             raise llm.StopResponse()
+
+        # Ask about terms the lexicon recovered from consonants alone. Injected as a system
+        # turn rather than appended to the user's message, so the transcript the client shows
+        # and the history stores stays exactly what the user said.
+        if MEDICAL_CONFIRM and self._uncertain:
+            terms = ", ".join(dict.fromkeys(self._uncertain))
+            logger.info("asking user to confirm uncertain terms: %s", terms)
+            turn_ctx.add_message(
+                role="system",
+                content=(
+                    f"The speech recogniser was unsure it heard these medical terms "
+                    f"correctly: {terms}. Before acting on them, work a brief, natural "
+                    f"confirmation into your reply — repeat the term back and ask if that "
+                    f"is right. Do not mention transcription or recognition."
+                ),
+            )
+        self._uncertain.clear()
 
 
 server = AgentServer()
@@ -246,6 +362,43 @@ async def _warm_speech_models() -> None:
             "speech model warm-up failed; the first turn will be slow", exc_info=True
         )
 
+    if INTERIM_STT_MODEL:
+        await _warm_interim_model()
+
+
+async def _warm_interim_model() -> None:
+    """Load the interim (realtime) model on the mlx-audio server.
+
+    /v1/realtime loads the model named in `?model=` on connect -- seconds when cached,
+    minutes on first download -- and only then sends `session.created`. Left to the first
+    real turn, the interim stream would time out and DualSTT would drop to finals-only for
+    that whole session. So connect, wait for `session.created` (or the server's `error`),
+    and hang up. Best-effort, like the warm-up above.
+    """
+    url = f"{TTS_BASE_URL}/realtime?{urlencode({'model': INTERIM_STT_MODEL})}"
+    url = url.replace("http", "ws", 1)
+    try:
+        async with (
+            aiohttp.ClientSession(timeout=_WARMUP_TIMEOUT) as http,
+            http.ws_connect(url) as ws,
+        ):
+            async for msg in ws:
+                if msg.type != aiohttp.WSMsgType.TEXT:
+                    continue
+                data = msg.json()
+                if data.get("type") == "session.created":
+                    logger.info("interim STT model warm")
+                    return
+                if data.get("type") == "error":
+                    raise RuntimeError(data.get("error") or data)
+        raise RuntimeError("realtime session closed before session.created")
+    except Exception:
+        logger.warning(
+            "interim STT warm-up failed; interim transcripts may be missing for the "
+            "first session",
+            exc_info=True,
+        )
+
 
 async def _fetch_parked_history(room: str) -> list[dict[str, str]]:
     """Collect a transcript the client parked on the token server for this room.
@@ -313,66 +466,87 @@ async def entrypoint(ctx: agents.JobContext) -> None:
     # Built after the attribute is set: constructing the VAD and turn detector below is
     # what triggers their lazy native model loads (~108 MB for the EOT model), and that
     # time belongs inside the initializing window too.
+    stt_cls, stt_kw = NoiseGatedSTT, {}
+    # Handed to both the STT (which fills it) and the agent (which drains it) so a weak
+    # correction can be read back to the user. Stays empty unless MEDICAL_CONFIRM is on.
+    uncertain: list[str] = []
+    if MEDICAL_LEXICON:
+        paths = [Path(p) for p in MEDICAL_LEXICON.split(os.pathsep) if p]
+        lexicon = DrugLexicon.from_files(*paths)
+        logger.info(
+            "medical lexicon: %d names from %s%s",
+            len(lexicon),
+            ", ".join(p.name for p in paths),
+            "; confirming weak matches" if MEDICAL_CONFIRM else "",
+        )
+        stt_cls, stt_kw = DrugCorrectedSTT, {"lexicon": lexicon, "uncertain": uncertain}
+
+    # STT_BASE_URL exposes an OpenAI-compatible /v1/audio/transcriptions -- by default
+    # stt_server.py on :8001, or mlx-audio on :8000 for any model it can route.
+    # The plugin treats non-realtime models as batch STT; it is wrapped in a VAD
+    # StreamAdapter -- by the session, or by DualSTT when an interim model is configured
+    # (see _with_interim below).
+    #
+    # Wrapped in the noise gate so ambient room noise never reaches the model: Silero
+    # fires on any energy transient, and every such segment otherwise costs a real HTTP
+    # round trip to the speech server. The transducer does return a blank for most of
+    # them -- unlike Whisper, which hallucinates a sentence -- so the gate is now about
+    # latency and wasted work more than about false turns, but it is load-bearing either
+    # way. It holds per-room state, so it is built here (per job) and never shared.
+    batch_stt = stt_cls(
+        wrapped=openai.STT(
+            model=ENV["STT_MODEL"],
+            base_url=STT_BASE_URL,
+            api_key="local",
+            use_realtime=False,
+            # Inert for the current default: omi-med-stt-v1 is English-only and has no
+            # language conditioning of any kind, and stt_server.py ignores the field.
+            # Still sent, and still worth keeping: it is load-bearing the moment STT_MODEL
+            # goes back to a multilingual model on mlx-audio (Nemotron conditions its
+            # encoder on a learned per-language prompt vector, Whisper takes it as a
+            # decoding hint), and it is what the plugin tags the SpeechEvent's language
+            # with -- correct at "en" either way.
+            language=STT_LANGUAGE,
+            # `temperature` is deliberately absent. It was here for Whisper, whose
+            # near-silence hallucinations come from sampling; an RNNT decodes greedily
+            # by construction, so there is nothing for it to mean. It was a no-op
+            # regardless -- neither mlx-audio's /v1/audio/transcriptions nor stt_server.py
+            # declares such a field, and both drop unrecognised form fields silently.
+        ),
+        gate=NoiseGate(),
+        **stt_kw,
+    )
+
+    # Local Silero VAD (runs in-process via livekit-local-inference).
+    # Drives speech segmentation for the non-streaming STT below, and is the
+    # fast path for barge-in detection.
+    vad = inference.VAD(
+        model="silero",
+        # A Silero window is 32 ms, so the 0.05 default latches on two consecutive
+        # windows -- a key press, a cup on a desk. The shortest utterance worth
+        # keeping ("yes") carries 250-350 ms of continuous energy, so 0.12 has
+        # roughly 2x headroom while still rejecting transients.
+        min_speech_duration=0.12,
+        min_silence_duration=0.25,
+        # Nudged up from the 0.5 default, but deliberately not to 0.7+: Silero scores
+        # TV dialogue and second-party speech about as highly as the user, so a high
+        # threshold buys nothing there while it does start dropping soft onsets. The
+        # real rejection happens in noise_gate.py, which costs no latency.
+        activation_threshold=0.55,
+        # Pinned rather than left to derive (activation - 0.15 = 0.40). The wider
+        # hysteresis stops the raised activation threshold from chopping an utterance
+        # at a mid-word energy dip.
+        deactivation_threshold=0.35,
+        # Left at the default, but pinned because it is load-bearing twice over: it is
+        # the only thing protecting word onsets from being clipped off the WAV the
+        # StreamAdapter cuts, *and* noise_gate.py estimates the ambient level from
+        # exactly this pre-roll. Shrinking it silently degrades the gate.
+        prefix_padding_duration=0.5,
+    )
+
     session = AgentSession(
-        # Local Silero VAD (runs in-process via livekit-local-inference).
-        # Drives speech segmentation for the non-streaming STT below, and is the
-        # fast path for barge-in detection.
-        vad=inference.VAD(
-            model="silero",
-            # A Silero window is 32 ms, so the 0.05 default latches on two consecutive
-            # windows -- a key press, a cup on a desk. The shortest utterance worth
-            # keeping ("yes") carries 250-350 ms of continuous energy, so 0.12 has
-            # roughly 2x headroom while still rejecting transients.
-            min_speech_duration=0.12,
-            min_silence_duration=0.25,
-            # Nudged up from the 0.5 default, but deliberately not to 0.7+: Silero scores
-            # TV dialogue and second-party speech about as highly as the user, so a high
-            # threshold buys nothing there while it does start dropping soft onsets. The
-            # real rejection happens in noise_gate.py, which costs no latency.
-            activation_threshold=0.55,
-            # Pinned rather than left to derive (activation - 0.15 = 0.40). The wider
-            # hysteresis stops the raised activation threshold from chopping an utterance
-            # at a mid-word energy dip.
-            deactivation_threshold=0.35,
-            # Left at the default, but pinned because it is load-bearing twice over: it is
-            # the only thing protecting word onsets from being clipped off the WAV the
-            # StreamAdapter cuts, *and* noise_gate.py estimates the ambient level from
-            # exactly this pre-roll. Shrinking it silently degrades the gate.
-            prefix_padding_duration=0.5,
-        ),
-        # STT_BASE_URL exposes an OpenAI-compatible /v1/audio/transcriptions -- by default
-        # stt_server.py on :8001, or mlx-audio on :8000 for any model it can route.
-        # The plugin treats non-realtime models as batch STT; the session wraps it
-        # with a VAD StreamAdapter automatically.
-        #
-        # Wrapped in the noise gate so ambient room noise never reaches the model: Silero
-        # fires on any energy transient, and every such segment otherwise costs a real HTTP
-        # round trip to the speech server. The transducer does return a blank for most of
-        # them -- unlike Whisper, which hallucinates a sentence -- so the gate is now about
-        # latency and wasted work more than about false turns, but it is load-bearing either
-        # way. It holds per-room state, so it is built here (per job) and never shared.
-        stt=NoiseGatedSTT(
-            wrapped=openai.STT(
-                model=ENV["STT_MODEL"],
-                base_url=STT_BASE_URL,
-                api_key="local",
-                use_realtime=False,
-                # Inert for the current default: omi-med-stt-v1 is English-only and has no
-                # language conditioning of any kind, and stt_server.py ignores the field.
-                # Still sent, and still worth keeping: it is load-bearing the moment STT_MODEL
-                # goes back to a multilingual model on mlx-audio (Nemotron conditions its
-                # encoder on a learned per-language prompt vector, Whisper takes it as a
-                # decoding hint), and it is what the plugin tags the SpeechEvent's language
-                # with -- correct at "en" either way.
-                language=STT_LANGUAGE,
-                # `temperature` is deliberately absent. It was here for Whisper, whose
-                # near-silence hallucinations come from sampling; an RNNT decodes greedily
-                # by construction, so there is nothing for it to mean. It was a no-op
-                # regardless -- neither mlx-audio's /v1/audio/transcriptions nor stt_server.py
-                # declares such a field, and both drop unrecognised form fields silently.
-            ),
-            gate=NoiseGate(),
-        ),
+        vad=vad,
+        stt=_with_interim(batch_stt, vad=vad),
         llm=openai.LLM(
             model=ENV["LLM_MODEL"],
             base_url=ENV["LLM_BASE_URL"],
@@ -421,6 +595,23 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         ),
     )
 
+    # One line per stage of a turn, so "it feels slow" can be pinned on a stage: how long
+    # after the user stopped talking the turn was ended (eou), how long the transcript took
+    # (stt), the LLM's first token (llm), the TTS's first audio (tts). All seconds.
+    @session.on("metrics_collected")
+    def _log_turn_timing(ev: MetricsCollectedEvent) -> None:
+        m = ev.metrics
+        if isinstance(m, EOUMetrics):
+            logger.info(
+                "turn timing: eou=%.2fs stt=%.2fs",
+                m.end_of_utterance_delay,
+                m.transcription_delay,
+            )
+        elif isinstance(m, LLMMetrics):
+            logger.info("turn timing: llm first token=%.2fs", m.ttft)
+        elif isinstance(m, TTSMetrics):
+            logger.info("turn timing: tts first audio=%.2fs", m.ttfb)
+
     if AUDIO_DEBUG:
         # Pairs with the per-segment logging in noise_gate.py: that shows every segment the
         # gate saw, this shows the ones that made it all the way to a transcript. Together
@@ -433,7 +624,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
     # Publishes lk.agent.state = "listening", which now genuinely means ready.
     await session.start(
         room=ctx.room,
-        agent=NadAssistant(chat_ctx=chat_ctx),
+        agent=NadAssistant(chat_ctx=chat_ctx, uncertain=uncertain),
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
                 # Off, against the library default. The iPhone already runs Apple's

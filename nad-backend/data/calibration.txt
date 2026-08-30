@@ -1,0 +1,82 @@
+# Read aloud, one line per turn, to measure how much medical vocabulary actually survives
+# the pipeline. Terms in [[double brackets]] are what gets scored -- say the sentence
+# normally, brackets are not spoken. See scripts/medical_eval.py.
+#
+# Chosen to be hostile on purpose: long compounds, near-homophone pairs (losartan/valsartan,
+# hydralazine/hydroxyzine) and the multi-word phrases most likely to be split. A term the
+# pipeline gets right here is not proof it is safe, but one it gets wrong is a real defect.
+#
+# Lines beginning with `#` and blank lines are ignored.
+
+# --- common drugs, said the way a patient says them ---
+I take [[metformin]] twice a day with food.
+She was started on [[atorvastatin]] forty milligrams at night.
+He has been on [[lisinopril]] for about three years.
+My doctor added [[amlodipine]] because the pressure stayed high.
+The prescription is for [[hydrochlorothiazide]] every morning.
+I am on [[levothyroxine]] and I take it before breakfast.
+They gave him [[amoxicillin]] for ten days.
+She takes [[sertraline]] and [[bupropion]] together.
+He was switched from [[omeprazole]] to [[pantoprazole]].
+The nurse gave me [[enoxaparin]] injections.
+I finished a course of [[azithromycin]] last week.
+He is on [[apixaban]] for stroke prevention.
+
+# --- near-homophones: the pair is the point ---
+She takes [[losartan]], not [[valsartan]].
+The order says [[hydralazine]], not [[hydroxyzine]].
+Is that [[clonidine]] or [[klonopin]]?
+He was given [[glipizide]] rather than [[glyburide]].
+The chart says [[prednisone]], the bottle says [[prednisolone]].
+
+# --- brand names patients actually use ---
+She has been on [[Lipitor]] for years.
+He started [[Ozempic]] last month.
+I was taking [[Eliquis]] before the surgery.
+The doctor mentioned [[Humira]] as an option.
+He uses [[Ventolin]] when it gets bad.
+
+# --- newer generics, the ones a general model has never seen ---
+She is on [[dupilumab]] for her skin.
+They started him on [[semaglutide]].
+He is being considered for [[tirzepatide]].
+The infusion was [[infliximab]].
+She takes [[apremilast]] daily.
+
+# --- conditions: long compounds ---
+He was diagnosed with [[atrial fibrillation]] two years ago.
+There is a history of [[myocardial infarction]] in the family.
+She has [[gastroesophageal reflux disease]].
+The scan confirmed a [[pulmonary embolism]].
+He is being treated for [[deep vein thrombosis]].
+Her labs show [[hypothyroidism]].
+He has [[chronic obstructive pulmonary disease]].
+She was told it is [[rheumatoid arthritis]], not [[osteoarthritis]].
+The biopsy showed [[ulcerative colitis]].
+He has [[obstructive sleep apnea]] and uses a machine at night.
+Her diagnosis is [[systemic lupus erythematosus]].
+He developed [[diabetic neuropathy]] in both feet.
+The report mentions [[thrombocytopenia]].
+She has [[hyperlipidemia]] and [[hypertension]].
+He was admitted with [[diabetic ketoacidosis]].
+There is [[peripheral artery disease]] in the left leg.
+
+# --- conditions patients name in their own words ---
+My mother has [[Alzheimer disease]].
+He was diagnosed with [[Parkinson disease]] last spring.
+She has [[Crohn disease]] and watches her diet.
+They ruled out [[multiple sclerosis]].
+He has [[psoriasis]] on both elbows.
+She gets [[migraine]] about twice a month.
+The child has [[asthma]] and [[eczema]].
+He is being screened for [[glaucoma]].
+
+# --- control lines: NO medical content. A correction here is a false positive. ---
+I sent you an email this morning about the meeting.
+He described the process in a lot of detail.
+The tour guide explained the local customs.
+I misplaced the instructions for the oven.
+This is for the best, I think.
+She practises the violin every evening.
+I cannot find the charger for my headphones.
+The invoice has not been paid yet.

@@ -297,9 +297,7 @@ It also serialises transcriptions on a single lock — one model, one MLX stream
 
   Nemotron is a cache-aware *streaming* model, and none of that is being used here: it is
   driven batch-mode through `/v1/audio/transcriptions`, one WAV per VAD segment, like every
-  other model above. mlx-audio does expose a `/v1/audio/transcriptions/realtime` websocket,
-  which is the obvious next lever on turn latency — untested against this pipeline, and it
-  would mean giving up the VAD `StreamAdapter` that `noise_gate.py` currently hooks into.
+  other model above. Streaming is used for a different job — see "Interim transcripts".
 
 Domain jargon is the other cost of a general-purpose model: it has never seen your
 vocabulary, so it returns whatever ordinary English the audio resembled — Whisper renders
@@ -319,7 +317,66 @@ promising rather than adding one. Both halves of that:
 So biasing needs either a speech server that implements the full OpenAI shape *and* a model
 family that has a prompt, or correction after the fact. An earlier attempt at the latter —
 fuzzy-matching transcripts against a domain lexicon — was built and removed as not worth its
-weight; `git log -- entity_correction.py` has it if that trade-off ever changes.
+weight (`git log -- entity_correction.py`). It is back, narrower: `drug_lexicon.py` snaps
+misheard *medical terms* onto a fixed vocabulary — drug names from `data/drugs.txt` and
+condition names from `data/conditions.txt` — because even the medical fine-tune below still
+mangles them and a greedy transducer has no other lever. `MEDICAL_LEXICON=` turns it off;
+the `medical lexicon:` log lines show every correction it makes, which is how to judge
+whether it is earning its keep this time.
+
+Conditions were added after drugs and fail the same way — a long Latin or Greek compound
+comes back as English-looking pieces ("a trial fibrillation", "my cardial infarction",
+"thrombo cyto penia") — so they share one matcher and one scan. The risk they add is the
+opposite one: ~370 more fuzzy candidates is ~370 more chances to capture ordinary speech,
+where a correction is *worse* than a miss because nothing in the transcript shows it
+happened. `test_ordinary_speech_is_untouched` pins that down; "an email" (one edit from
+"anemia", rejected only by `LENGTH_RATIO`) is the canary for any threshold change. On the
+30 hand-written manglings in `test_drug_lexicon.py` the combined lexicon corrects 30 and
+fires on none of 101 ordinary sentences.
+
+Holding that line as the lexicon grew needed one new rule: `SHORT_WINDOW_THRESHOLD` requires
+a one- or two-word window to score 0.85 rather than 0.80. A four-word window folding to
+within 20% of a drug ("lice in a pril" → lisinopril) is a coincidence English does not
+produce; a two-word one is ("really nice" → repaglinide, 0.800; "to mention" → tolmetin,
+0.824). Raising the flat `THRESHOLD` instead would drop "a tour of statin" → atorvastatin,
+which also scores exactly 0.800 — the window length is what separates them, not the score.
+It also retired a standing `xfail`: "I need a new statin" no longer becomes nystatin.
+
+`data/conditions.txt` is hand-picked, not generated, and deliberately omits everyday
+one-word complaints ("cough", "rash", "fever") that a general model already gets right:
+they would add fuzzy attractors and buy nothing.
+
+Three files ship, and the split is not cosmetic — it is what keeps the false-positive rate at
+zero while the name count goes up:
+
+| file | names | how it is curated |
+| --- | --- | --- |
+| `data/drugs.txt` | 250 | hand-picked commons; **the only place brand names live** |
+| `data/ingredients.txt` | 3502 | generated: every FDA active ingredient |
+| `data/conditions.txt` | 372 | hand-picked conditions |
+
+`data/ingredients.txt` is regenerated from the Drugs@FDA data files zip
+(https://www.fda.gov/media/89850/download — fda.gov is not reachable from every network, so
+this is a manual step):
+
+    uv run --no-project scripts/build_drug_lexicon.py ~/Downloads/drugsatfda.zip \
+        --no-brands -o data/ingredients.txt
+
+Active ingredients are lowercased and salt-stripped ("metformin", not "metformin
+hydrochloride"); names with digits or symbols and generic "x and y" combinations are dropped.
+
+**`--no-brands` is load-bearing.** Dropping it adds the FDA's 5228 brand names and wrecks
+ordinary speech: measured over 101 non-medical sentences, the ingredients corrupt **0** and
+the brands corrupt **6** — "for the" → Forteo, "the oven" → Theovent (0.93!), "violin" →
+V-cillin, "I cannot" → Ycanth, "invoice" → Invirase, "machine" → Marcaine. Brand names are
+coined to be short and English-shaped, which is exactly what a phonetic matcher cannot tell
+from English; no threshold separates them, so they are excluded wholesale and the few dozen
+patients actually say are kept by hand in `data/drugs.txt`. Re-run the probe before ever
+loading them.
+
+At ~4100 names the matcher blocks candidates by first letter and length (~3 ms per utterance),
+and names under six folded letters only ever match exactly — too many short drug names are
+also English words for a near miss to mean anything.
 
 **The third option that paragraph missed is a model that already knows the vocabulary**, and
 it is the one the current default takes. `omi-med-stt-v1` is `parakeet-tdt-0.6b-v2` fine-tuned
@@ -333,6 +390,32 @@ clinical language, so ordinary conversation gets slightly worse odds on vocabula
 fine-tune wasn't built for. That is a domain decision rather than a latency one, and it is the
 thing to measure before trusting it — see the A/B under "Tuning". If Nad ever needs a second
 domain, the same shape applies: find a fine-tune, not a prompt.
+
+## Interim transcripts
+
+With a batch STT the client sees nothing while the user talks, then a whole sentence at
+once. Setting `INTERIM_STT_MODEL` adds a second, *streaming* model whose only job is to show
+words as they are spoken:
+
+- `dual_stt.py` sends every audio frame to both. The streaming model's deltas become
+  `INTERIM_TRANSCRIPT` events (display only — `AgentSession` never puts interims into the
+  chat context); the batch model, in the same VAD `StreamAdapter` it always had, still
+  produces `FINAL_TRANSCRIPT`, which is what the LLM reads and the app saves. So the noise
+  gate and the medical lexicon are unaffected, and a general model showing "met foreman" for a
+  second is replaced by the medical model's "metformin" when the turn ends.
+- The streaming model is served by mlx-audio's `/v1/realtime` websocket (the OpenAI Realtime
+  transcription protocol, which `livekit-plugins-openai` already speaks). In mlx-audio 0.5
+  the only model that implements the server's streaming-session protocol is
+  `mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit`; Nemotron has the streaming internals
+  but is not wired to that endpoint. The model loads on first connect; `agent.py` warms it
+  during the initializing window alongside TTS and STT.
+- Best-effort: if the realtime side is down the stream logs one warning and continues with
+  finals only. The agent never goes deaf because the cosmetic path broke.
+
+What this does *not* change is the time from the end of speech to the agent's first word.
+For that, `agent.py` now logs `turn timing:` lines per turn — `eou` (end of speech → turn
+decided), `stt` (→ transcript), `llm first token`, `tts first audio` — so a slow reply can
+be pinned on a stage rather than guessed at.
 
 ## Turn-taking & barge-in
 
@@ -398,6 +481,100 @@ STT made of it — the exact bytes the model received, so a bad transcript can b
 against another model offline instead of guessed at. This records the user: opt in
 deliberately, and delete the files afterwards.
 
+### Measuring medical accuracy for real
+
+Everything in `test_drug_lexicon.py` is a *hand-written* guess at how the model mishears a
+term. That is enough to tune a threshold; it is not an accuracy number. `data/calibration.txt`
+plus `scripts/medical_eval.py` produce one from real speech:
+
+```bash
+NAD_AUDIO_DUMP=/tmp/nad-medical scripts/dev.sh     # then read calibration.txt aloud,
+                                                   # one line per turn
+uv run --group dev scripts/medical_eval.py /tmp/nad-medical
+```
+
+The dumped `.txt` is the transcript *before* the lexicon runs, so one recording scores both
+stages and reports every term as one of:
+
+| | meaning |
+| --- | --- |
+| `raw` | the STT spelled it correctly by itself |
+| `recovered` | the STT missed it, the lexicon put it back — the lexicon earning its keep |
+| `lost` | neither; a real defect, and the line to add to the lexicon or escalate to the model |
+| `corrupted` | a **control** line with no medical content got "corrected" — worse than lost |
+
+`calibration.txt` is deliberately hostile: long compounds, near-homophone pairs
+(losartan/valsartan, hydralazine/hydroxyzine, prednisone/prednisolone), and eight control
+lines with no medical content at all, because the false-positive rate is the number that
+actually matters. Alignment is by similarity rather than order, so a segment the gate drops
+or a line you skip is reported unscored instead of silently shifting every later result.
+Exit status is non-zero if anything was lost or corrupted, so it can gate a model swap.
+
+Add `--stt http://localhost:8001/v1` to re-transcribe the wavs against a running server
+instead of scoring the dumped text — that is how to compare two STT models on one recording
+without speaking twice.
+
+To get a number without speaking at all — useful for regression-checking a lexicon or
+threshold change — synthesise the prompts with macOS `say` and feed them straight to the STT:
+
+```bash
+say -v Samantha --data-format=LEI16@16000 -o seg0000.wav "I take metformin twice a day."
+curl -s -F model=omi -F file=@seg0000.wav localhost:8001/v1/audio/transcriptions
+```
+
+Do that for each non-comment line of `calibration.txt` into a directory, write each response's
+`text` beside its wav as `segNNNN.txt`, and score it as above. It is not a substitute for a
+human run — see the caveats under the table — but it is repeatable, and it is what the tiers
+below were tuned on.
+
+#### Where it stands
+
+Measured against `omi-med-stt-v1-mlx-q8` on `calibration.txt` synthesised with three macOS
+`say` voices — 61 terms each, same audio down every column:
+
+| voice | STT alone | curated 250-name lexicon | current (4122 names + tiers) |
+| --- | --- | --- | --- |
+| Samantha (US) | 49/61 (80.3%) | 59/61 (96.7%) | **60/61 (98.4%)** |
+| Karen (AU) | 42/61 (68.9%) | 55/61 (90.2%) | **59/61 (96.7%)** |
+| Daniel (UK) | 44/61 (72.1%) | 55/61 (90.2%) | **57/61 (93.4%)** |
+| all three | 135/183 (73.8%) | 169/183 (92.3%) | **176/183 (96.2%)** |
+
+Control lines corrupted: **0**, in every run.
+
+#### When it is still wrong
+
+The ceiling above is not a tuning problem. The vendor measures ~97.6% recall on medical terms,
+and every remaining lever in `drug_lexicon.py` trades precision for recall at a bad rate (see
+its `skeleton` docstring for the two that were measured and refused). So the last defence is
+not hearing better but **failing louder**: `MEDICAL_CONFIRM=1` makes the agent read a term back
+when the lexicon recovered it from consonants alone.
+
+Only the weakest tier qualifies. `"met formin"` → metformin is an exact fold match and is never
+questioned; `"azampic"` → Ozempic matched on the spine `smpk` with every vowel discarded, and
+that is the case worth a "you said Ozempic, is that right?". Off by default because it changes
+how the agent talks — turn it on when transcripts are clinical rather than conversational. This
+is standard practice for spoken medication orders, and it is the only mechanism here that
+converts an unavoidable recognition error into a *caught* one rather than a silent one.
+
+**Quantization is not costing anything.** The default `omi-med-stt-v1-mlx-q8` (941 MB) and the
+full-precision `omi-med-stt-v1-mlx` (2497 MB) produced **byte-identical transcripts** across all
+59 segments — same 49/61 raw, same 60/61 corrected. Don't reach for the bigger checkpoint hoping
+to recover terms; on this material there is nothing there to recover, and q8 loads faster and
+holds less memory. (Re-test if the audio changes character — this was synthesised speech.)
+
+Two caveats that matter more than the numbers. **Synthetic speech flatters the model** — no
+disfluency, no room, no accent drift — so treat these as a ceiling, not as real-use accuracy;
+the human-voice run is still worth doing and will score lower. And **accent moves the result
+more than any tuning did**: the UK voice sits five points below the US one on identical text,
+which is the strongest argument for re-running this against your own voice before trusting
+any of it.
+
+Both later tiers came out of this measurement rather than from intuition. `skeleton()` exists
+because Samantha's run lost `enoxaparin` to "anoxoperin" and `Ozempic` to "azampic" — vowel
+errors at ~0.72, which `fold()` preserves by design. The non-word rule exists because
+Daniel's run lost `Humira` to "humera" (0.833) and `prednisone` to "pridnisome" (0.800), both
+just under the short-window bar and neither an English word.
+
 That dump is also how to A/B the current domain-specific default against a general model —
 worth doing before trusting it, since a medical fine-tune is a bet on your vocabulary. Talk
 for a few minutes covering ordinary chit-chat, one-word answers ("yes", "stop"), whatever
@@ -427,8 +604,9 @@ uv run --group dev pytest      # unit tests for the gate's decision logic and th
 
 ## Notes
 
-- STT is batch (one HTTP call per utterance) rather than streaming. Latency is dominated by
-  model speed on your Mac — see the table under "Swapping models" for measured numbers.
+- The transcript the LLM reads is batch (one HTTP call per utterance) rather than streaming;
+  `INTERIM_STT_MODEL` only adds live text for the screen. Latency is dominated by model
+  speed on your Mac — see the table under "Swapping models" for measured numbers.
 - The STT server is the second process that can't be containerised, for the same MLX reason,
   and it is deliberately in its own uv environment rather than a `pyproject.toml` dependency
   group. `mlx` publishes wheels only for macos-arm64 and `uv lock` resolves universally, so a

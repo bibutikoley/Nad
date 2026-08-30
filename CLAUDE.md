@@ -140,6 +140,32 @@ These span files and are easy to break:
   (`git log -S "amara" -- agent.py` restores it). The current default is Parakeet-family, so the
   list is unchanged from the Nemotron era. Revisit this and the latency table in
   `nad-backend/README.md` → "Swapping models" whenever `STT_MODEL` changes.
+- **The medical lexicon must never correct ordinary speech.** `drug_lexicon.py` snaps misheard
+  drug and condition names onto `data/drugs.txt` + `data/ingredients.txt` +
+  `data/conditions.txt` (`MEDICAL_LEXICON`, os.pathsep-separated, ~4100 names), because the
+  transducer has no hotword biasing. A *missed* correction costs accuracy; a *wrong* one
+  silently corrupts the transcript, and nothing downstream can tell — so the false-positive
+  rate is the number that matters, not the hit rate. `THRESHOLD`, `SHORT_WINDOW_THRESHOLD`,
+  `MIN_KEY_LEN`, `LENGTH_RATIO` and `MIN_FUZZY_LEN` hold that line; don't loosen one without
+  re-running `test_drug_lexicon.py`, whose `test_ordinary_speech_is_untouched` exists for
+  exactly this. "an email" is the canary — one edit from "anemia", rejected only by
+  `LENGTH_RATIO`. Matching runs in three tiers, each weaker than the last and each only
+  reached when the one above finds nothing: exact fold → fuzzy (blocked by first letter and
+  length) → unambiguous consonant spine, single-word only. A spine shared by two drugs
+  (citalopram/escitalopram) is dropped, never guessed — picking wrong between a
+  near-homophone pair is the worst thing this module could do.
+- **Only spine-tier corrections may trigger `MEDICAL_CONFIRM`.** The read-back exists because
+  recognition cannot be made perfect (the vendor measures ~97.6% recall) and the lexicon is
+  already at the precision/recall frontier — so the last defence is failing loudly rather than
+  hearing better. It is off by default. Widening it to confident matches would make the habit
+  meaningless: an exact fold match like "met formin" → metformin is not in doubt, and asking
+  about it teaches the user to ignore the question.
+- **Never load the FDA brand-name list into the lexicon.** `build_drug_lexicon.py --no-brands`
+  is what generates `data/ingredients.txt`, and the flag is load-bearing: over 101 ordinary
+  sentences the 3502 ingredients corrupt 0 and the 5228 brands corrupt 6 ("for the" → Forteo,
+  "the oven" → Theovent, "violin" → V-cillin). Brand names are coined short and English-shaped,
+  so no threshold separates them from English; the ones patients actually say are hand-kept in
+  `data/drugs.txt`. `test_brand_long_tail_is_not_loaded` guards this.
 - **STT and TTS are separate servers with one base URL each.** `STT_BASE_URL` defaults to
   `http://localhost:8001/v1` (`stt_server.py`), `TTS_BASE_URL` to `http://localhost:8000/v1`
   (mlx-audio). There is no `SPEECH_BASE_URL` fallback any more — anything that assumes one
@@ -197,7 +223,15 @@ These span files and are easy to break:
   against.
 - `NAD_AUDIO_DUMP=/some/dir` — writes each accepted segment as `segNNNN.wav` + a `.txt` of what
   the STT made of it, for replaying bad transcripts against another model offline. **Records the
-  user; opt in deliberately and delete afterwards.**
+  user; opt in deliberately and delete afterwards.** The `.txt` is written by the gate, so it is
+  the transcript *before* the lexicon corrects it — which is what makes one dump enough to score
+  both stages.
+- **Medical accuracy claims need `scripts/medical_eval.py`, not the unit tests.** Every mangling
+  in `test_drug_lexicon.py` is hand-written — good enough to tune a threshold, not to state an
+  accuracy number. Read `data/calibration.txt` aloud with `NAD_AUDIO_DUMP` set, then score it;
+  terms come back `raw` / `recovered` / `lost` / `corrupted`, and it exits non-zero on the last
+  two. Its control lines (no medical content) are the false-positive check, which is the number
+  that matters — see the lexicon invariants above.
 - `lk agent console` builds no RoomIO, so noise layers 1 and 4 are inactive there — it exercises
   the gate and the transcript filter only. Test the rest on a device.
 - A Kokoro TTS failure can happen *inside* a streamed HTTP 200 (dropped connection mid-body),

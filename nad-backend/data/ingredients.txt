@@ -1,0 +1,3507 @@
+# Built by scripts/build_drug_lexicon.py on 2026-08-30 from drugsatfda.zip.
+# One name per line; `#` comments and blank lines are ignored. Regenerate rather
+# than hand-edit -- or add a second file and add it to MEDICAL_LEXICON.
+
+# --- active ingredients (3502) ---
+abacavir
+abacavir dolutegravir lamivudine
+abacavir sulfate
+abaloparatide
+abametapir
+abarelix
+abatacept
+abciximab
+abemaciclib
+abiraterone
+abiraterone acetate
+abobotulinumtoxina
+abrocitinib
+acalabrutinib
+acalabrutinib maleate
+acamprosate
+acamprosate calcium
+acarbose
+acebutolol
+acebutolol hydrochloride
+aceclidine
+aceclidine hydrochloride
+acetaminophen
+acetazolamide
+acetazolamide sodium
+acetic acid glacial
+acetohexamide
+acetohydroxamic acid
+acetophenazine
+acetophenazine maleate
+acetrizoate
+acetrizoate sodium
+acetylcholine
+acetylcholine chloride
+acetylcysteine
+acetylcysteine lysine
+acetyldigitoxin
+acitretin
+aclidinium
+aclidinium bromide
+acoltremon
+acoramidis
+acoramidis hydrochloride
+acrisorcin
+acrivastine
+acyclovir
+acyclovir sodium
+adagrasib
+adalimumab
+adalimumab-aacf
+adalimumab-aaty
+adalimumab-adaz
+adalimumab-adbm
+adalimumab-afzb
+adalimumab-aqvh
+adalimumab-atto
+adalimumab-bwwd
+adalimumab-fkjp
+adalimumab-ryvk
+adapalene
+adapalene benzoyl peroxide
+adefovir dipivoxil
+adenosine
+ado-trastuzumab emtansine
+aducanumab-avwa
+afamelanotide
+afatinib
+afatinib dimaleate
+aficamten
+aflibercept
+aflibercept-abzv
+aflibercept-ayyh
+aflibercept-boav
+aflibercept-jbvf
+aflibercept-mrbb
+aflibercept-yszy
+agalsidase beta
+air
+air polymer-type a
+alatrofloxacin
+alatrofloxacin mesylate
+albendazole
+albiglutide
+albumin human
+albuterol
+albuterol sulfate
+alcaftadine
+alclometasone
+alclometasone dipropionate
+alcohol
+aldesleukin
+alectinib
+alectinib hydrochloride
+alemtuzumab
+alendronate
+alendronate sodium
+alfentanil
+alfentanil hydrochloride
+alfuzosin
+alfuzosin hydrochloride
+alglucosidase alfa
+alirocumab
+aliskiren hemifumarate
+alitretinoin
+alkavervir
+allopurinol
+allopurinol sodium
+almotriptan
+almotriptan malate
+alogliptin
+alogliptin and metformin
+alogliptin and metformin hydrochloride
+alogliptin benzoate
+alosetron
+alosetron hydrochloride
+alpelisib
+alpha-tocopherol
+alpha-tocopherol acetate
+alprazolam
+alprostadil
+alseroxylon
+alteplase
+altretamine
+aluminum
+aluminum acetate
+aluminum hydroxide
+alvimopan
+amantadine
+amantadine hydrochloride
+ambenonium
+ambenonium chloride
+ambrisentan
+amcinonide
+amdinocillin
+amifampridine
+amifampridine phosphate
+amifostine
+amikacin
+amikacin sulfate
+amiloride
+amiloride hydrochloride
+amino acids
+aminocaproic acid
+aminoglutethimide
+aminohippurate
+aminohippurate sodium
+aminolevulinic acid
+aminolevulinic acid hydrochloride
+aminophylline
+aminosalicylate
+aminosalicylate sodium
+aminosalicylic acid
+aminosalicylic acid resin complex
+amiodarone
+amiodarone hydrochloride
+amisulpride
+amitriptyline
+amitriptyline hydrochloride
+amivantamab and hyaluronidase-lpuj
+amivantamab-vmjw
+amlexanox
+amlodipine
+amlodipine benzoate
+amlodipine besylate
+amlodipine maleate
+ammonium
+ammonium chloride
+ammonium lactate
+amodiaquine
+amodiaquine hydrochloride
+amoxapine
+amoxicillin
+amphetamine
+amphetamine adipate
+amphetamine aspartate
+amphetamine aspartate monohydrate
+amphetamine resin complex
+amphetamine sulfate
+amphotericin b
+ampicillin
+ampicillin sodium
+amprenavir
+anacaulase-bcdb
+anagrelide
+anagrelide hydrochloride
+anakinra
+anastrozole
+angiotensin ii
+angiotensin ii acetate
+anidulafungin
+anifrolumab-fnia
+anileridine
+anileridine hydrochloride
+anileridine phosphate
+anisindione
+anisotropine methylbromide
+ansuvimab-zykl
+antazoline
+antazoline phosphate
+apalutamide
+apixaban
+apomorphine
+apomorphine hydrochloride
+apraclonidine
+apraclonidine hydrochloride
+apremilast
+aprepitant
+aprocitentan
+aprotinin
+arbutamine
+arbutamine hydrochloride
+ardeparin
+ardeparin sodium
+arformoterol
+arformoterol tartrate
+argatroban
+arginine
+arginine hydrochloride
+arimoclomol
+arimoclomol citrate
+aripiprazole
+aripiprazole lauroxil
+armodafinil
+arsenic trioxide
+artemether
+artesunate
+articaine
+articaine hydrochloride
+asciminib
+asciminib hydrochloride
+ascorbic acid
+asenapine
+asenapine maleate
+asfotase alfa
+asparaginase
+aspirin
+atacicept-vymj
+atazanavir
+atazanavir sulfate
+atenolol
+atezolizumab
+atezolizumab and hyaluronidase-tqjs
+atogepant
+atoltivimab
+atomoxetine
+atomoxetine hydrochloride
+atorvastatin
+atorvastatin calcium
+atovaquone
+atracurium
+atracurium besylate
+atrasentan
+atrasentan hydrochloride
+atropine
+atropine sulfate
+auranofin
+avacincaptad pegol
+avacincaptad pegol sodium
+avacopan
+avalglucosidase alfa-ngpt
+avanafil
+avapritinib
+avatrombopag
+avatrombopag maleate
+avelumab
+avibactam
+avibactam sodium
+avobenzone
+avutometinib
+avutometinib potassium
+axatilimab-csfr
+axitinib
+azacitidine
+azatadine
+azatadine maleate
+azathioprine
+azathioprine sodium
+azelaic acid
+azelastine
+azelastine hydrochloride
+azelastine hydrochrloride
+azilsartan kamedoxomil
+azilsartan medoxomil
+azithromycin
+azithromycin dihydrate
+azlocillin
+azlocillin sodium
+aztreonam
+bacampicillin
+bacampicillin hydrochloride
+bacitracin
+bacitracin zinc
+baclofen
+baloxavir marboxil
+balsalazide
+balsalazide disodium
+baricitinib
+barium
+barium sulfate
+basiliximab
+baxdrostat
+bazedoxifene
+bazedoxifene acetate
+becaplermin
+beclomethasone
+beclomethasone dipropionate
+beclomethasone dipropionate monohydrate
+bedaquiline
+bedaquiline fumarate
+belantamab mafodotin-blmf
+belatacept
+belimumab
+belinostat
+belumosudil
+belumosudil mesylate
+belzutifan
+bempedoic acid
+bempedoic acid ezetimibe
+benazepril
+benazepril hydrochloride
+bendamustine
+bendamustine hydrochloride
+bendroflumethiazide
+benoxinate
+benoxinate hydrochloride
+benralizumab
+bentiromide
+bentoquatam
+benzgalantamine
+benzgalantamine gluconate
+benzhydrocodone
+benzhydrocodone hydrochloride
+benznidazole
+benzonatate
+benzoyl peroxide
+benzphetamine
+benzphetamine hydrochloride
+benzquinamide
+benzquinamide hydrochloride
+benzthiazide
+benztropine
+benztropine mesylate
+benzyl
+benzyl alcohol
+benzyl benzoate
+benzylpenicilloyl polylysine
+bepotastine besilate
+bepridil
+bepridil hydrochloride
+beractant
+berahyaluronidase alfa-pmph
+berdazimer
+berdazimer sodium
+berotralstat dihydrochloride
+besifloxacin
+besifloxacin hydrochloride
+beta carotene
+betaine
+betamethasone
+betamethasone acetate
+betamethasone benzoate
+betamethasone dipropionate
+betamethasone sodium phosphate
+betamethasone valerate
+betaxolol
+betaxolol hydrochloride
+betazole
+betazole hydrochloride
+bethanechol
+bethanechol chloride
+bethanidine
+bethanidine sulfate
+betrixaban
+bevacizumab
+bevacizumab-adcd
+bevacizumab-awwb
+bevacizumab-bvzr
+bevacizumab-maly
+bevacizumab-nwgd
+bevacizumab-tnjn
+bevacizumab-vikg
+bexagliflozin
+bexarotene
+bezlotoxumab
+bicalutamide
+bictegravir
+bictegravir sodium
+bimatoprost
+bimekizumab-bkzx
+binimetinib
+biotin
+biperiden
+biperiden hydrochloride
+biperiden lactate
+birch triterpenes
+bisacodyl
+bismuth subcitrate
+bismuth subcitrate potassium
+bismuth subsalicylate
+bisoprolol
+bisoprolol fumarate
+bitolterol
+bitolterol mesylate
+bivalirudin
+bleomycin
+bleomycin sulfate
+blinatumomab
+boceprevir
+bortezomib
+bosentan
+bosutinib
+bosutinib monohydrate
+botulinum toxin type b
+bremelanotide
+bremelanotide acetate
+brensocatib
+brentuximab vedotin
+bretylium
+bretylium tosylate
+brexanolone
+brexpiprazole
+brigatinib
+brilliant blue g
+brimonidine
+brimonidine tartrate
+brincidofovir
+brinzolamide
+brivaracetam
+brodalumab
+brolucizumab-dbll
+bromfenac
+bromfenac sodium
+bromocriptine
+bromocriptine mesylate
+bromodiphenhydramine
+bromodiphenhydramine hydrochloride
+brompheniramine
+brompheniramine maleate
+buclizine
+buclizine hydrochloride
+budesonide
+bulevirtide-gmod
+bumetanide
+bupivacaine
+bupivacaine hydrochloride
+buprenorphine
+buprenorphine hydrochloride
+bupropion
+bupropion hydrobromide
+bupropion hydrochloride
+burosumab-twza
+buspirone
+buspirone hydrochloride
+busulfan
+butabarbital
+butabarbital sodium
+butalbital
+butenafine
+butenafine hydrochloride
+butoconazole
+butoconazole nitrate
+butorphanol
+butorphanol tartrate
+cabazitaxel
+cabergoline
+cabotegravir
+cabotegravir sodium
+cabozantinib
+cabozantinib s-malate
+caffeine
+caffeine citrate
+calaspargase pegol-mknl
+calcifediol
+calcipotriene
+calcipotriene hydrate
+calcitonin human
+calcitonin salmon
+calcitonin salmon recombinant
+calcitriol
+calcium
+calcium acetate
+calcium carbonate
+calcium chloride
+calcium gluceptate
+calcium gluconate
+calcium metrizoate
+calcium oxybate
+calfactant
+canagliflozin
+canagliflozin metformin
+canagliflozin metformin hydrochloride
+canakinumab
+candesartan cilexetil
+candicidin
+cangrelor
+cannabidiol
+cantharidin
+capecitabine
+capivasertib
+caplacizumab-yhdp
+capmatinib
+capmatinib hydrochloride
+capreomycin
+capreomycin sulfate
+capromab pendetide
+capsaicin
+captopril
+carbachol
+carbamazepine
+carbenicillin
+carbenicillin disodium
+carbenicillin indanyl
+carbenicillin indanyl sodium
+carbidopa
+carbidopa levodopa
+carbinoxamine
+carbinoxamine maleate
+carbon dioide
+carbon dioxide
+carbon dioxide usp
+carboplatin
+carboprost tromethamine
+carfilzomib
+carglumic acid
+cariprazine
+cariprazine hydrochloride
+carisoprodol
+carmustine
+carphenazine
+carphenazine maleate
+carprofen
+carteolol
+carteolol hydrochloride
+carvedilol
+carvedilol phosphate
+casimersen
+caspofungin
+caspofungin acetate
+cedazuridine
+cefaclor
+cefamandole nafate
+cefazolin
+cefazolin sodium
+cefdinir
+cefditoren pivoxil
+cefepime
+cefepime hydrochloride
+cefiderocol
+cefiderocol sulfate tosylate
+cefixime
+cefmenoxime
+cefmenoxime hydrochloride
+cefmetazole
+cefmetazole sodium
+cefonicid
+cefonicid sodium
+cefoperazone
+cefoperazone sodium
+ceforanide
+cefotaxime
+cefotaxime sodium
+cefotetan
+cefotetan disodium
+cefotiam
+cefotiam hydrochloride
+cefoxitin
+cefoxitin sodium
+cefpiramide
+cefpiramide sodium
+cefpodoxime proxetil
+cefprozil
+ceftaroline fosamil
+ceftazidime
+ceftazidime sodium
+ceftibuten
+ceftibuten dihydrate
+ceftizoxime
+ceftizoxime sodium
+ceftobiprole medocaril
+ceftobiprole medocaril sodium
+ceftolozane
+ceftolozane sulfate
+ceftriaxone
+ceftriaxone sodium
+cefuroxime
+cefuroxime axetil
+cefuroxime sodium
+celecoxib
+cellulose
+cellulose sodium phosphate
+cemiplimab-rwlc
+cenegermin-bkbj
+cenobamate
+centanafadine
+centanafadine hydrochloride
+cephalexin
+cephalexin hydrochloride
+cephaloglycin
+cephalothin
+cephalothin sodium
+cephapirin
+cephapirin sodium
+cephradine
+ceritinib
+cerivastatin
+cerivastatin sodium
+cerliponase alfa
+certolizumab pegol
+ceruletide diethylamine
+cetirizine
+cetirizine hydrochloride
+cetrorelix
+cetrorelix acetate
+cetuximab
+cetyl alcohol
+cevimeline
+cevimeline hydrochloride
+chenodiol
+chlophedianol
+chlophedianol hydrochloride
+chlorambucil
+chloramphenicol
+chloramphenicol sodium succinate
+chlordiazepoxide
+chlordiazepoxide hydrochloride
+chlorhexidine
+chlorhexidine gluconate
+chlormezanone
+chloroprocaine
+chloroprocaine hydrochloride
+chloroquine
+chloroquine hydrochloride
+chloroquine phosphate
+chlorothiazide
+chlorothiazide sodium
+chlorotrianisene
+chloroxine
+chlorphenesin carbamate
+chlorpheniramine
+chlorpheniramine maleate
+chlorpheniramine polistirex
+chlorphentermine
+chlorphentermine hydrochloride
+chlorpromazine
+chlorpromazine hydrochloride
+chlorpropamide
+chlorprothixene
+chlortetracycline
+chlortetracycline hydrochloride
+chlorthalidone
+chlorzoxazone
+cholecalciferol
+cholestyramine
+cholic acid
+choline fenofibrate
+choriogonadotropin alfa
+chromic
+chromic chloride
+chymopapain
+ciclesonide
+ciclopirox
+cidofovir
+cilastatin
+cilastatin sodium
+cilostazol
+cimetidine
+cimetidine hydrochloride
+cinacalcet
+cinacalcet hydrochloride
+cinoxacin
+cipaglucosidase alfa-atga
+cipepofol
+ciprofloxacin
+ciprofloxacin hydrochloride
+cisapride
+cisapride monohydrate
+cisatracurium
+cisatracurium besylate
+cisplatin
+citalopram
+citalopram hydrobromide
+citric acid
+cladribine
+clarithromycin
+clascoterone
+clavulanate
+clavulanate potassium
+clemastine
+clemastine fumarate
+clesrovimab-cfor
+clevidipine
+clidinium
+clidinium bromide
+clindamycin
+clindamycin hydrochloride
+clindamycin palmitate hydrochloride
+clindamycin phosphate
+clioquinol
+clobazam
+clobetasol
+clobetasol propionate
+clocortolone pivalate
+clofarabine
+clofazimine
+clofibrate
+clomiphene
+clomiphene citrate
+clomipramine
+clomipramine hydrochloride
+clonazepam
+clonidine
+clonidine hydrochloride
+clopidogrel bisulfate
+clorazepate dipotassium
+clotrimazole
+cloxacillin
+cloxacillin sodium
+clozapine
+cobicistat
+cobimetinib
+cobimetinib fumarate
+cocaine
+cocaine hydrochloride
+codeine
+codeine phosphate
+codeine polistirex
+codeine sulfate
+colchicine
+colesevelam
+colesevelam hydrochloride
+colestipol
+colestipol hydrochloride
+colfosceril
+colfosceril palmitate
+colistimethate
+colistimethate sodium
+colistin
+colistin sulfate
+collagenase
+collagenase clostridium histolyticum
+collagenase clostridium histolyticum-aaes
+concizumab
+concizumab-mtci
+conivaptan
+conivaptan hydrochloride
+copanlisib dihydrochloride
+copper
+copper histidinate
+corticorelin ovine triflutate
+corticotropin
+corticotropin-zinc
+corticotropin-zinc hydroxide
+cortisone
+cortisone acetate
+cosibelimab-ipdl
+cosyntropin
+crinecerfont
+crisaborole
+crizanlizumab-tmca
+crizotinib
+crofelemer
+cromolyn
+cromolyn sodium
+crotamiton
+crovalimab-akkz
+cryptenamine acetates
+cryptenamine tannates
+cupric
+cupric chloride
+cupric sulfate
+cyanocobalamin
+cyclacillin
+cyclizine
+cyclizine lactate
+cyclobenzaprine
+cyclobenzaprine hydrochloride
+cyclopentolate
+cyclopentolate hydrochloride
+cyclophosphamide
+cycloserine
+cyclosporine
+cyclothiazide
+cycrimine
+cycrimine hydrochloride
+cyproheptadine
+cyproheptadine hydrochloride
+cysteamine
+cysteamine bitartrate
+cysteamine hydrochloride
+cysteine
+cysteine hydrochloride
+cytarabine
+dabigatran etexilate
+dabigatran etexilate mesylate
+dabrafenib
+dabrafenib mesylate
+dacarbazine
+daclatasvir dihydrochloride
+daclizumab
+dacomitinib
+dactinomycin
+dalbavancin
+dalbavancin hydrochloride
+dalfampridine
+dalfopristin
+dalteparin
+dalteparin sodium
+danaparoid
+danaparoid sodium
+danazol
+danicopan
+dantrolene
+dantrolene sodium
+dapagliflozin
+dapagliflozin metformin
+dapagliflozin metformin hydrochloride
+dapagliflozin saxagliptin
+dapagliflozin saxagliptin monohydrate
+dapiprazole
+dapiprazole hydrochloride
+daprodustat
+dapsone
+daptomycin
+daratumumab
+daratumumab and hyaluronidase-fihj
+darbepoetin alfa
+daridorexant
+daridorexant hydrochloride
+darifenacin
+darifenacin hydrobromide
+darolutamide
+darunavir
+darunavir and cobicistat
+darunavir and ritonavir
+darunavir ethanolate
+dasabuvir
+dasabuvir sodium
+dasatinib
+dasiglucagon
+dasiglucagon hydrochloride
+datopotamab deruxtecan-dlnk
+daunorubicin
+daunorubicin citrate
+daunorubicin hydrochloride
+daxibotulinumtoxina-lanm
+decamethonium
+decamethonium bromide
+decitabine
+defactinib
+defactinib hydrochloride
+deferasirox
+deferiprone
+deferoxamine
+deferoxamine mesylate
+defibrotide
+defibrotide sodium
+deflazacort
+degarelix
+degarelix acetate
+dehydrated alcohol
+delafloxacin meglumine
+delavirdine
+delavirdine mesylate
+delgocitinib
+demecarium
+demecarium bromide
+demeclocycline
+demeclocycline hydrochloride
+denileukin diftitox
+denileukin diftitox-cxdl
+denosumab
+denosumab-adet
+denosumab-bbdz
+denosumab-bmwo
+denosumab-bnht
+denosumab-desu
+denosumab-dssb
+denosumab-kyqq
+denosumab-mobz
+denosumab-nxxp
+denosumab-qbde
+deoxycholic acid
+depemokimab-ulaa
+deserpidine
+desflurane
+desipramine
+desipramine hydrochloride
+desirudin recombinant
+deslanoside
+desloratadine
+desmopressin
+desmopressin acetate
+desogestrel
+desonide
+desoximetasone
+desoxycorticosterone
+desoxycorticosterone acetate
+desoxycorticosterone pivalate
+desoxyribonuclease
+desvenlafaxine
+desvenlafaxine fumarate
+desvenlafaxine succinate
+deucravacitinib
+deuruxolitinib
+deuruxolitinib phosphate
+deutetrabenazine
+deutivacaftor
+dexamethasone
+dexamethasone acetate
+dexamethasone sodium phosphate
+dexbrompheniramine
+dexbrompheniramine maleate
+dexchlorpheniramine
+dexchlorpheniramine maleate
+dexlansoprazole
+dexmedetomidine
+dexmedetomidine hydrochloride
+dexmethylphenidate
+dexmethylphenidate hydrochloride
+dexpanthenol
+dexrazoxane
+dexrazoxane hydrochloride
+dextroamphetamine
+dextroamphetamine adipate
+dextroamphetamine resin complex
+dextroamphetamine saccharate
+dextroamphetamine sulfate
+dextromethorphan
+dextromethorphan hydrobromide
+dextromethorphan polistirex
+dextrose
+dextrothyroxine
+dextrothyroxine sodium
+dezocine
+diatrizoate
+diatrizoate meglumine
+diatrizoate sodium
+diazepam
+diazoxide
+diazoxide choline
+dibucaine
+dibucaine hydrochloride
+dichlorphenamide
+diclofenac
+diclofenac epolamine
+diclofenac potassium
+diclofenac sodium
+dicloxacillin
+dicloxacillin sodium
+dicumarol
+dicyclomine
+dicyclomine hydrochloride
+didanosine
+dienestrol
+dienogest
+diethylcarbamazine
+diethylcarbamazine citrate
+diethylpropion
+diethylpropion hydrochloride
+diethylstilbestrol
+diethylstilbestrol diphosphate
+difamilast
+difelikefalin
+difelikefalin acetate
+difenoxin
+difenoxin hydrochloride
+diflorasone diacetate
+diflunisal
+difluprednate
+digitoxin
+digoxin
+dihydrocodeine
+dihydrocodeine bitartrate
+dihydroergotamine
+dihydroergotamine mesylate
+diltiazem
+diltiazem hydrochloride
+diltiazem malate
+dimenhydrinate
+dimercaprol
+dimethyl
+dimethyl fumarate
+dimethyl sulfoxide
+dimyristoyl lecithin
+dinoprost tromethamine
+dinoprostone
+dinutuximab
+diphemanil methylsulfate
+diphenhydramine
+diphenhydramine citrate
+diphenhydramine hydrochloride
+diphenidol
+diphenidol hydrochloride
+diphenoxylate
+diphenoxylate hydrochloride
+diphenylpyraline
+diphenylpyraline hydrochloride
+dipivefrin
+dipivefrin hydrochloride
+dipyridamole
+dirithromycin
+diroximel
+diroximel fumarate
+disopyramide
+disopyramide phosphate
+disulfiram
+divalproex
+divalproex sodium
+dobutamine
+dobutamine hydrochloride
+docetaxel
+docosanol
+dofetilide
+dolasetron
+dolasetron mesylate
+dolutegravir
+dolutegravir and lamivudine
+dolutegravir lamivudine tenofovir alafenamide
+dolutegravir sodium
+donanemab-azbt
+donepezil
+donepezil hydrochloride
+donidalorsen
+donidalorsen sodium
+dopamine
+dopamine hydrochloride
+doravirine
+dordaviprone
+dordaviprone hydrochloride
+doripenem
+dornase alfa
+dorzolamide
+dorzolamide hydrochloride
+dostarlimab-gxly
+doxacurium
+doxacurium chloride
+doxapram
+doxapram hydrochloride
+doxazosin
+doxazosin mesylate
+doxecitine
+doxepin
+doxepin hydrochloride
+doxercalciferol
+doxorubicin
+doxorubicin hydrochloride
+doxribtimine
+doxycycline
+doxycycline calcium
+doxycycline hyclate
+doxylamine
+doxylamine succinate
+dromostanolone
+dromostanolone propionate
+dronabinol
+dronedarone
+dronedarone hydrochloride
+droperidol
+drospirenone
+droxidopa
+dulaglutide
+duloxetine
+duloxetine hydrochloride
+dupilumab
+durlobactam
+durlobactam sodium
+durvalumab
+dutasteride
+duvelisib
+dyclonine
+dyclonine hydrochloride
+dydrogesterone
+dyphylline
+ecallantide
+ecamsule
+echothiophate iodide
+econazole
+econazole nitrate
+eculizumab
+eculizumab-aagh
+eculizumab-aeeb
+edaravone
+edetate
+edetate calcium disodium
+edoxaban
+edoxaban tosylate
+edrophonium
+edrophonium chloride
+efavirenz
+efbemalenograstim alfa-vuxw
+efgartigimod alfa
+efgartigimod alfa and hyaluronidase-qvfc
+efinaconazole
+eflapegrastim-xnst
+eflornithine
+eflornithine hydrochloride
+elacestrant
+elacestrant hydrochloride
+elafibranor
+elagolix
+elagolix sodium
+elamipretide
+elamipretide hydrochloride
+elapegademase-lvlr
+elbasvir
+eletriptan
+eletriptan hydrobromide
+elexacaftor ivacaftor tezacaftor
+eliglustat
+eliglustat tartrate
+elinzanetant
+elosulfase alfa
+elotuzumab
+elranatamab
+eltrombopag
+eltrombopag choline
+eltrombopag olamine
+eluxadoline
+elvitegravir
+emapalumab-lzsg
+emedastine difumarate
+emicizumab
+empagliflozin
+empagliflozin metformin
+empagliflozin metformin hydrochloride
+emtricitabine
+emtricitabine tenofovir alafenamide
+enalapril
+enalapril maleate
+enalaprilat
+enasidenib
+enasidenib mesylate
+encorafenib
+enflurane
+enfortumab vedotin-ejfv
+enfuvirtide
+enlicitide
+enlicitide decanoate
+enmetazobactam
+enoxacin
+enoxaparin
+enoxaparin sodium
+ensartinib
+ensartinib hydrochloride
+ensifentrine
+ensitrelvir
+entacapone
+entecavir
+entrectinib
+enzalutamide
+epcoritamab-bysp
+ephedrine
+ephedrine hydrochloride
+ephedrine sulfate
+epinastine
+epinastine hydrochloride
+epinephrine
+epinephrine bitartrate
+epirubicin
+epirubicin hydrochloride
+eplerenone
+eplontersen
+eplontersen sodium
+epoetin alfa
+epoetin alfa-epbx
+epoprostenol
+epoprostenol sodium
+eprosartan
+eprosartan mesylate
+eptifibatide
+eptinezumab-jjmr
+eravacycline dihydrochloride
+erdafitinib
+erenumab-aooe
+ergocalciferol
+ergoloid mesylates
+ergotamine
+ergotamine tartrate
+eribulin
+eribulin mesylate
+erlotinib
+erlotinib hydrochloride
+ertapenem
+ertapenem sodium
+ertugliflozin
+erythromycin
+erythromycin estolate
+erythromycin ethylsuccinate
+erythromycin gluceptate
+erythromycin lactobionate
+erythromycin stearate
+escitalopram
+escitalopram oxalate
+esketamine
+esketamine hydrochloride
+eslicarbazepine
+eslicarbazepine acetate
+esmolol
+esmolol hydrochloride
+esomeprazole
+esomeprazole magnesium
+esomeprazole sodium
+esomeprazole strontium
+estazolam
+estetrol
+estradiol
+estradiol acetate
+estradiol cypionate
+estradiol hemihydrate
+estradiol valerate
+estramustine
+estramustine phosphate sodium
+estrogens conjugated
+estrogens conjugated synthetic a
+estrogens conjugated synthetic b
+estrogens esterified
+estrone
+estropipate
+eszopiclone
+etanercept
+etanercept-szzs
+etanercept-ykro
+etelcalcetide
+eteplirsen
+ethacrynate
+ethacrynate sodium
+ethacrynic acid
+ethambutol
+ethambutol hydrochloride
+ethanolamine oleate
+ethchlorvynol
+ethinamate
+ethinyl estradiol
+ethiodized oil
+ethionamide
+ethopropazine
+ethopropazine hydrochloride
+ethosuximide
+ethotoin
+ethoxzolamide
+ethylestrenol
+ethynodiol diacetate
+etidocaine
+etidocaine hydrochloride
+etidronate
+etidronate disodium
+etodolac
+etomidate
+etonogestrel
+etoposide
+etoposide phosphate
+etrasimod arginine
+etravirine
+etretinate
+etripamil
+evans blue
+everolimus
+evinacumab-dgnb
+evolocumab
+exemestane
+exenatide synthetic
+ezetimibe
+ezogabine
+fam-trastuzumab deruxtecan-nxki
+famciclovir
+famotidine
+faricimab-svoa
+febuxostat
+fedratinib
+fedratinib hydrochloride
+felbamate
+felodipine
+fenfluramine
+fenfluramine hydrochloride
+fenofibrate
+fenofibric acid
+fenoldopam
+fenoldopam mesylate
+fenoprofen
+fenoprofen calcium
+fentanyl
+fentanyl citrate
+fentanyl hydrochloride
+ferric
+ferric ammonium
+ferric ammonium citrate
+ferric carboxymaltose
+ferric citrate
+ferric derisomaltose
+ferric maltol
+ferric oxyhydroxide
+ferric pyrophosphate
+ferric pyrophosphate citrate
+ferrous
+ferrous fumarate
+ferrous sulfate
+ferumoxides
+ferumoxsil
+ferumoxytol
+fesoterodine
+fesoterodine fumarate
+fexinidazole
+fexofenadine
+fexofenadine hydrochloride
+fezolinetant
+fibrinolysin
+fidaxomicin
+filgrastim
+filgrastim-aafi
+filgrastim-ayow
+filgrastim-laha
+filgrastim-sndz
+filgrastim-txid
+finafloxacin
+finasteride
+finerenone
+fingolimod
+fingolimod hydrochloride
+fingolimod lauryl
+fingolimod lauryl sulfate
+fish oil
+fish oil triglycerides
+fitusiran
+fitusiran sodium
+flavoxate
+flavoxate hydrochloride
+flecainide
+flecainide acetate
+flibanserin
+floxuridine
+fluconazole
+flucytosine
+fludarabine
+fludarabine phosphate
+fludrocortisone
+fludrocortisone acetate
+flumazenil
+flumethasone pivalate
+flunisolide
+fluocinolone acetonide
+fluocinonide
+fluorescein
+fluorescein sodium
+fluorometholone
+fluorometholone acetate
+fluorouracil
+fluoxetine
+fluoxetine hydrochloride
+fluoxymesterone
+fluphenazine
+fluphenazine decanoate
+fluphenazine enanthate
+fluphenazine hydrochloride
+fluprednisolone
+flurandrenolide
+flurazepam
+flurazepam hydrochloride
+flurbiprofen
+flurbiprofen sodium
+flutamide
+fluticasone
+fluticasone furoate
+fluticasone propionate
+fluvastatin
+fluvastatin sodium
+fluvoxamine
+fluvoxamine maleate
+folic acid
+fomepizole
+fomivirsen
+fomivirsen sodium
+fondaparinux
+fondaparinux sodium
+formoterol
+formoterol fumarate
+formoterol fumarate dihydrate
+fosamprenavir
+fosamprenavir calcium
+fosaprepitant dimeglumine
+foscarbidopa
+foscarnet
+foscarnet sodium
+fosdenopterin
+fosdenopterin hydrobromide
+fosfomycin
+fosfomycin disodium
+fosfomycin tromethamine
+fosinopril
+fosinopril sodium
+foslevodopa
+fosnetupitant
+fosnetupitant chloride hydrochloride
+fosphenytoin
+fosphenytoin sodium
+fospropofol
+fospropofol disodium
+fostamatinib
+fostamatinib disodium
+fostemsavir tromethamine
+fremanezumab-vfrm
+frovatriptan
+frovatriptan succinate
+fruquintinib
+fulvestrant
+furazolidone
+furosemide
+futibatinib
+gabapentin
+gabapentin enacarbil
+gabapentin encarbil
+gadobenate dimeglumine
+gadobutrol
+gadodiamide
+gadofosveset trisodium
+gadopentetate dimeglumine
+gadopiclenol
+gadoquatrane
+gadoterate meglumine
+gadoteridol
+gadoversetamide
+gadoxetate
+gadoxetate disodium
+galantamine
+galantamine hydrobromide
+galcanezumab-gnlm
+gallamine triethiodide
+gallium
+gallium nitrate
+galsulfase
+ganaxolone
+ganciclovir
+ganciclovir sodium
+ganirelix
+ganirelix acetate
+garadacimab-gxii
+garetosmab
+gatifloxacin
+gedatolisib
+gefitinib
+gemcitabine
+gemcitabine hydrochloride
+gemfibrozil
+gemifloxacin
+gemifloxacin mesylate
+gemtuzumab ozogamicin
+gentamicin
+gentamicin sulfate
+gentian violet
+gepirone
+gepirone hydrochloride
+gepotidacin
+gepotidacin mesylate
+gilteritinib
+gilteritinib fumarate
+givinostat
+givinostat hydrochloride
+givosiran
+givosiran sodium
+glasdegib
+glasdegib maleate
+glatiramer
+glatiramer acetate
+glecaprevir
+glimepiride
+glipizide
+glofitamab-gxbm
+glucagon
+glucagon hydrochloride
+glucarpidase
+gluconolactone
+glutathione disulfide
+glutethimide
+glyburide
+glycerin
+glycerol phenylbutyrate
+glycine
+glycopyrrolate
+glycopyrronium
+glycopyrronium tosylate
+golimumab
+golimumab-sldi
+golodirsen
+gonadorelin
+gonadorelin acetate
+gonadorelin hydrochloride
+gonadotropin chorionic
+goserelin
+goserelin acetate
+gramicidin
+granisetron
+granisetron hydrochloride
+grazoprevir
+grepafloxacin
+grepafloxacin hydrochloride
+griseofulvin microcrystalline
+griseofulvin microsize
+griseofulvin ultramicrocrystalline
+griseofulvin ultramicrosize
+guaifenesin
+guanabenz
+guanabenz acetate
+guanadrel
+guanadrel sulfate
+guanethidine monosulfate
+guanfacine
+guanfacine hydrochloride
+guanidine
+guanidine hydrochloride
+guselkumab
+halazepam
+halcinonide
+halobetasol
+halobetasol propionate
+halofantrine
+halofantrine hydrochloride
+haloperidol
+haloperidol decanoate
+haloperidol lactate
+haloprogin
+halothane
+helium
+heparin
+heparin calcium
+heparin sodium
+hetacillin
+hetacillin potassium
+hexachlorophene
+hexafluorenium
+hexafluorenium bromide
+hexaminolevulinate
+hexaminolevulinate hydrochloride
+hexocyclium methylsulfate
+hexylcaine
+hexylcaine hydrochloride
+histamine
+histamine phosphate
+histrelin
+histrelin acetate
+homatropine methylbromide
+hyaluronidase
+hyaluronidase recombinant human
+hyaluronidase-nvhy
+hydralazine
+hydralazine hydrochloride
+hydrochlorothiazide
+hydrocodone
+hydrocodone bitartrate
+hydrocodone polistirex
+hydrocortamate
+hydrocortamate hydrochloride
+hydrocortisone
+hydrocortisone acetate
+hydrocortisone butyrate
+hydrocortisone cypionate
+hydrocortisone probutate
+hydrocortisone sodium phosphate
+hydrocortisone sodium succinate
+hydrocortisone valerate
+hydroflumethiazide
+hydrogen peroxide
+hydromorphone
+hydromorphone hydrochloride
+hydroquinone
+hydroxocobalamin
+hydroxyamphetamine
+hydroxyamphetamine hydrobromide
+hydroxychloroquine
+hydroxychloroquine sulfate
+hydroxyprogesterone caproate
+hydroxypropyl cellulose
+hydroxystilbamidine isethionate
+hydroxyurea
+hydroxyzine
+hydroxyzine hydrochloride
+hydroxyzine pamoate
+ibalizumab-uiyk
+ibandronate
+ibandronate sodium
+iberdomide
+ibrexafungerp
+ibrexafungerp citrate
+ibritumomab tiuxetan
+ibrutinib
+ibuprofen
+ibuprofen lysine
+ibuprofen sodium
+ibutilide
+ibutilide fumarate
+icatibant
+icatibant acetate
+icodextrin
+icosapent ethyl
+icotrokinra
+icotrokinra hydrochloride
+idarubicin
+idarubicin hydrochloride
+idarucizumab
+idelalisib
+idoxuridine
+idursulfase
+ifosfamide
+iloperidone
+iloprost
+imatinib
+imatinib mesylate
+imciromab pentetate
+imetelstat
+imetelstat sodium
+imiglucerase
+imipenem
+imipramine
+imipramine hydrochloride
+imipramine pamoate
+imiquimod
+imlunestrant
+imlunestrant tosylate
+inamrinone
+inamrinone lactate
+inavolisib
+inclisiran
+inclisiran sodium
+incobotulinumtoxina
+indacaterol
+indacaterol maleate
+indapamide
+indecainide
+indecainide hydrochloride
+indigotindisulfonate
+indigotindisulfonate sodium
+indinavir
+indinavir sulfate
+indocyanine green
+indomethacin
+indomethacin sodium
+inebilizumab-cdon
+infigratinib
+infigratinib phosphate
+infliximab
+infliximab-abda
+infliximab-axxq
+infliximab-dyyb
+infliximab-qbtx
+ingenol mebutate
+inotersen
+inotersen sodium
+inotuzumab ozogamicin
+insulin aspart
+insulin aspart protamine recombinant
+insulin aspart recombinant
+insulin aspart-fsan
+insulin aspart-szjj
+insulin aspart-xjhz
+insulin degludec
+insulin detemir
+insulin detemir recombinant
+insulin glargine
+insulin glargine recombinant
+insulin glargine-aglr
+insulin glargine-aldy
+insulin glargine-yfgn
+insulin glulisine recombinant
+insulin human
+insulin icodec
+insulin lispro
+insulin lispro protamine recombinant
+insulin lispro recombinant
+insulin lispro-aabc
+insulin recombinant human
+inulin
+invert sugar
+iocetamic acid
+iodamide meglumine
+iodine povacrylex
+iodipamide
+iodipamide meglumine
+iodipamide sodium
+iodixanol
+iodoxamate meglumine
+iohexol
+iomeprol
+iopamidol
+iopanoic acid
+iophendylate
+iopromide
+iothalamate
+iothalamate meglumine
+iothalamate sodium
+iotrolan
+ioversol
+ioxaglate
+ioxaglate meglumine
+ioxaglate sodium
+ioxilan
+ipilimumab
+ipodate
+ipodate calcium
+ipodate sodium
+ipratropium
+ipratropium bromide
+iptacopan
+iptacopan hydrochloride
+irbesartan
+irinotecan
+irinotecan hydrochloride
+iron dextran
+iron sucrose
+isatuximab-irfc
+isavuconazonium
+isavuconazonium sulfate
+islatravir
+islelizumab-jsgr
+isocarboxazid
+isoetharine
+isoetharine hydrochloride
+isoetharine mesylate
+isoflurane
+isoflurophate
+isoniazid
+isopropamide iodide
+isopropyl alcohol
+isoproterenol
+isoproterenol hydrochloride
+isoproterenol sulfate
+isosorbide
+isosorbide dinitrate
+isosorbide mononitrate
+isosulfan blue
+isotretinoin
+isradipine
+istradefylline
+itraconazole
+ivabradine
+ivabradine hydrochloride
+ivacaftor
+ivacaftor tezacaftor
+ivermectin
+ivosidenib
+ixabepilone
+ixazomib
+ixazomib citrate
+ixekizumab
+kanamycin
+kanamycin sulfate
+ketamine
+ketamine hydrochloride
+ketoconazole
+ketoprofen
+ketorolac tromethamine
+ketotifen
+ketotifen fumarate
+l-glutamine
+labetalol
+labetalol hydrochloride
+lacosamide
+lactic acid
+lactitol
+lactulose
+lamivudine
+lamivudine nevirapine and stavudine
+lamotrigine
+lanadelumab-flyo
+landiolol
+landiolol hydrochloride
+lanreotide
+lanreotide acetate
+lansoprazole
+lanthanum
+lanthanum carbonate
+lapatinib ditosylate
+lapyrium
+lapyrium chloride
+laronidase
+larotrectinib
+larotrectinib sulfate
+lasmiditan
+lasmiditan succinate
+latanoprost
+latanoprostene bunod
+lazertinib
+lazertinib mesylate
+lebrikizumab-lbkz
+lecanemab-irmb
+ledipasvir
+lefamulin
+lefamulin acetate
+leflunomide
+lemborexant
+lenacapavir
+lenacapavir sodium
+lenalidomide
+leniolisib
+leniolisib phosphate
+lenvatinib
+lenvatinib mesylate
+leodopa
+lerodalcibep-liga
+lesinurad
+letermovir
+letibotulinumtoxina-wlbg
+letrozole
+leucovorin
+leucovorin calcium
+leuprolide
+leuprolide acetate
+leuprolide mesylate
+levacetylleucine
+levalbuterol
+levalbuterol hydrochloride
+levalbuterol tartrate
+levallorphan
+levallorphan tartrate
+levamisole
+levamisole hydrochloride
+levamlodipine
+levamlodipine maleate
+levetiracetam
+levobetaxolol
+levobetaxolol hydrochloride
+levobunolol
+levobunolol hydrochloride
+levobupivacaine
+levobupivacaine hydrochloride
+levocabastine
+levocabastine hydrochloride
+levocarnitine
+levocetirizine dihydrochloride
+levodopa
+levofloxacin
+levoketoconazole
+levoleucovorin
+levoleucovorin calcium
+levomefolate
+levomefolate calcium
+levomepromazine
+levomethadyl
+levomethadyl acetate hydrochloride
+levomilnacipran
+levomilnacipran hydrochloride
+levonordefrin
+levonorgestrel
+levopropoxyphene napsylate
+levopropoxyphene napsylate anhydrous
+levorphanol
+levorphanol tartrate
+levothyroxine
+levothyroxine sodium
+lidocaine
+lidocaine hydrochloride
+lifitegrast
+linaclotide
+linagliptin
+linagliptin and metformin
+linagliptin and metformin hydrochloride
+lincomycin
+lincomycin hydrochloride
+lindane
+linerixibat
+linezolid
+linvoseltamab-gcpt
+liothyronine
+liothyronine sodium
+lipase
+liraglutide
+lisdexamfetamine dimesylate
+lisinopril
+lithium
+lithium carbonate
+lithium citrate
+lixisenatide
+lodoxamide tromethamine
+lofexidine
+lofexidine hydrochloride
+lomefloxacin
+lomefloxacin hydrochloride
+lomitapide
+lomitapide mesylate
+lomustine
+lonafarnib
+lonapegsomatropin-tcgd
+loncastuximab tesirine-lpyl
+loperamide
+loperamide hydrochloride
+lopinavir
+loracarbef
+loratadine
+lorazepam
+lorcaserin
+lorcaserin hydrochloride
+lorlatinib
+losartan
+losartan potassium
+loteprednol etabonate
+lotilaner
+lovastatin
+loxapine
+loxapine hydrochloride
+loxapine succinate
+lubiprostone
+lucinactant
+luliconazole
+lumacaftor
+lumasiran
+lumasiran sodium
+lumateperone
+lumateperone tosylate
+lumefantrine
+lurasidone
+lurasidone hydrochloride
+lurbinectedin
+luspatercept-aamt
+lusutrombopag
+lypressin
+macimorelin
+macimorelin acetate
+macitentan
+mafenide
+mafenide acetate
+maftivimab
+magnesium
+magnesium acetate
+magnesium acetate tetrahydrate
+magnesium carbonate
+magnesium chloride
+magnesium hydroxide
+magnesium oxide
+magnesium oxybate
+magnesium sulfate
+magnesium sulfate anhydrous
+magnesium trisilicate
+malathion
+mangafodipir trisodium
+manganese
+manganese chloride
+manganese chloride tetrahydrate
+manganese sulfate
+mannitol
+maprotiline
+maprotiline hydrochloride
+maralixibat
+maralixibat chloride
+maraviroc
+margetuximab-cmkb
+maribavir
+marstacimab-hncq
+masoprocol
+mavacamten
+mavorixafor
+mazindol
+mebendazole
+mebutamate
+mecamylamine
+mecamylamine hydrochloride
+mecasermin recombinant
+mecasermin rinfabate recombinant
+mechlorethamine
+mechlorethamine hydrochloride
+meclizine
+meclizine hydrochloride
+meclocycline sulfosalicylate
+meclofenamate
+meclofenamate sodium
+medical air
+medium chain triglycerides
+medroxyprogesterone
+medroxyprogesterone acetate
+medrysone
+mefenamic acid
+mefloquine
+mefloquine hydrochloride
+megestrol
+megestrol acetate
+meglumine
+meglumine metrizoate
+meloxicam
+melphalan
+melphalan hydrochloride
+memantine
+memantine hydrochloride
+menadiol sodium diphosphate
+menadione
+menthol
+mepenzolate
+mepenzolate bromide
+meperidine
+meperidine hydrochloride
+mephentermine
+mephentermine sulfate
+mephenytoin
+mepivacaine
+mepivacaine hydrochloride
+mepolizumab
+meprednisone
+meprobamate
+mequinol
+mercaptopurine
+meropenem
+mersalyl
+mersalyl sodium
+mesalamine
+mesna
+mesoridazine
+mesoridazine besylate
+mestranol
+metaproterenol
+metaproterenol sulfate
+metaraminol
+metaraminol bitartrate
+metaxalone
+metformin
+metformin hydrochloride
+metformin hydrochloride sitagliptin
+metformin hydrochloride sitagliptin phosphate
+methacholine
+methacholine chloride
+methacycline
+methacycline hydrochloride
+methadone
+methadone hydrochloride
+methamphetamine
+methamphetamine hydrochloride
+methantheline
+methantheline bromide
+metharbital
+methazolamide
+methdilazine
+methdilazine hydrochloride
+methenamine hippurate
+methicillin
+methicillin sodium
+methimazole
+methixene
+methixene hydrochloride
+methocarbamol
+methohexital
+methohexital sodium
+methotrexate
+methotrexate sodium
+methoxamine
+methoxamine hydrochloride
+methoxsalen
+methoxy polyethylene glycol-epoetin beta
+methoxyflurane
+methscopolamine
+methscopolamine bromide
+methsuximide
+methyclothiazide
+methyl
+methyl aminolevulinate
+methyl aminolevulinate hydrochloride
+methyl salicylate
+methyldopa
+methyldopate
+methyldopate hydrochloride
+methylene blue
+methylergonovine
+methylergonovine maleate
+methylnaltrexone
+methylnaltrexone bromide
+methylphenidate
+methylphenidate hydrochloride
+methylprednisolone
+methylprednisolone acetate
+methylprednisolone sodium succinate
+methyltestosterone
+methyprylon
+methysergide
+methysergide maleate
+metipranolol
+metipranolol hydrochloride
+metoclopramide
+metoclopramide hydrochloride
+metocurine iodide
+metolazone
+metoprolol
+metoprolol fumarate
+metoprolol succinate
+metoprolol tartrate
+metreleptin
+metrizamide
+metrizoate
+metrizoate magnesium
+metrizoate sodium
+metrizoic acid
+metronidazole
+metronidazole hydrochloride
+metyrapone
+metyrosine
+mexiletine
+mexiletine hydrochloride
+mezlocillin
+mezlocillin sodium monohydrate
+micafungin
+micafungin sodium
+miconazole
+miconazole nitrate
+midazolam
+midazolam hydrochloride
+midodrine
+midodrine hydrochloride
+midostaurin
+mifepristone
+migalastat
+migalastat hydrochloride
+miglitol
+miglustat
+milnacipran
+milnacipran hydrochloride
+milrinone
+milrinone lactate
+milsaperidone
+miltefosine
+minocycline
+minocycline hydrochloride
+minoxidil
+mipomersen
+mipomersen sodium
+mirabegron
+mirdametinib
+mirikizumab-mrkz
+mirtazapine
+mirvetuximab soravtansine-gynx
+misoprostol
+mitapivat
+mitapivat sulfate
+mitomycin
+mitotane
+mitoxantrone
+mitoxantrone hydrochloride
+mivacurium
+mivacurium chloride
+mobocertinib
+mobocertinib succinate
+modafinil
+moexipril
+moexipril hydrochloride
+mogamulizumab-kpkc
+molindone
+molindone hydrochloride
+momelotinib dihydrochloride
+mometasone
+mometasone furoate
+monobenzone
+monoctanoin
+monomethyl
+monomethyl fumarate
+montelukast
+montelukast sodium
+moricizine
+moricizine hydrochloride
+morphine
+morphine sulfate
+mosunetuzumab-axgb
+motixafortide
+motixafortide acetate
+moxalactam
+moxalactam disodium
+moxetumomab pasudotox-tdfk
+moxidectin
+moxifloxacin
+moxifloxacin hydrochloride
+mupirocin
+mupirocin calcium
+mycophenolate
+mycophenolate mofetil
+mycophenolate mofetil hydrochloride
+mycophenolate sodium
+nabilone
+nabumetone
+nadolol
+nafarelin
+nafarelin acetate
+nafcillin
+nafcillin sodium
+naftifine
+naftifine hydrochloride
+nalbuphine
+nalbuphine hydrochloride
+naldemedine
+naldemedine tosylate
+nalidixic acid
+nalmefene
+nalmefene hydrochloride
+naloxegol
+naloxegol oxalate
+naloxone
+naloxone hydrochloride
+naltrexone
+naltrexone hydrochloride
+nandrolone
+nandrolone decanoate
+nandrolone phenpropionate
+naphazoline
+naphazoline hydrochloride
+naproxen
+naproxen sodium
+naratriptan
+naratriptan hydrochloride
+narsoplimab-wuug
+natalizumab
+natalizumab-sztn
+natamycin
+nateglinide
+navepegritide
+naxitamab-gqgk
+nebivolol
+nebivolol hydrochloride
+necitumumab
+nedocromil
+nedocromil sodium
+nedosiran
+nedosiran sodium
+nefazodone
+nefazodone hydrochloride
+nelarabine
+nelfinavir
+nelfinavir mesylate
+nemolizumab-ilto
+neomycin
+neomycin sulfate
+neostigmine methylsulfate
+nepafenac
+nerandomilast
+neratinib
+neratinib maleate
+nesiritide
+netarsudil
+netarsudil dimesylate
+netarsudil mesylate
+netilmicin
+netilmicin sulfate
+netupitant
+nevirapine
+niacin
+niacinamide
+nicardipine
+nicardipine hydrochloride
+niclosamide
+nicotine
+nicotine polacrilex
+nifedipine
+nifurtimox
+nilotinib
+nilotinib d-tartrate
+nilotinib hydrochloride
+nilotinib hydrochloride dihydrate
+nilotinib tartrate
+nilutamide
+nimodipine
+nintedanib
+nintedanib esylate
+nipocalimab-aahu
+niraparib
+niraparib tosylate
+nirmatrelvir
+nirogacestat
+nirogacestat hydrobromide
+nirsevimab-alip
+nisoldipine
+nitazoxanide
+nitisinone
+nitric
+nitric oxide
+nitrofurantoin
+nitrofurantoin macrocrystalline
+nitrofurantoin sodium
+nitrofurazone
+nitrogen
+nitrogen nf
+nitroglycerin
+nitrous
+nitrous oxide
+nivolumab
+nizatidine
+nogapendekin alfa inbakicept-pmln
+norelgestromin
+norepinephrine
+norepinephrine bitartrate
+norethindrone
+norethindrone acetate
+norethynodrel
+norfloxacin
+norgestimate
+norgestrel
+nortriptyline
+nortriptyline hydrochloride
+novobiocin
+novobiocin sodium
+nusinersen
+nusinersen sodium
+nystatin
+obeticholic acid
+obiltoxaximab
+obinutuzumab
+ocrelizumab
+ocrelizumab and hyaluronidase-ocsq
+ocriplasmin
+octinoxate
+octocrylene
+octreotide
+octreotide acetate
+odesivimab
+odevixibat
+ofatumumab
+ofloxacin
+olanzapine
+olanzapine pamoate
+olaparib
+olaratumab
+olezarsen
+olezarsen sodium
+oliceridine
+olipudase alfa-rpcp
+olive oil
+olmesartan medoxomil
+olodaterol
+olodaterol hydrochloride
+olopatadine
+olopatadine hydrochloride
+olsalazine
+olsalazine sodium
+olutasidenib
+omacetaxine mepesuccinate
+omadacycline
+omadacycline tosylate
+omalizumab
+omalizumab-igec
+omaveloxolone
+ombitasvir
+ombitasvir paritaprevir ritonavir
+omeprazole
+omeprazole magnesium
+omidenepag isopropyl
+onabotulinumtoxina
+ondansetron
+ondansetron hydrochloride
+opicapone
+orforglipron
+orforglipron calcium
+oritavancin diphosphate
+orlistat
+orphenadrine
+orphenadrine citrate
+orphenadrine hydrochloride
+oseltamivir
+oseltamivir phosphate
+osilodrostat
+osilodrostat phosphate
+osimertinib
+osimertinib mesylate
+ospemifene
+oteseconazole
+oveporexton
+oxacillin
+oxacillin sodium
+oxaliplatin
+oxamniquine
+oxandrolone
+oxaprozin
+oxaprozin potassium
+oxazepam
+oxcarbazepine
+oxiconazole
+oxiconazole nitrate
+oxiglutatione
+oxprenolol
+oxprenolol hydrochloride
+oxtriphylline
+oxybenzone
+oxybutynin
+oxybutynin chloride
+oxycodone
+oxycodone hydrochloride
+oxycodone terephthalate
+oxygen
+oxymetazoline
+oxymetazoline hydrochloride
+oxymetholone
+oxymorphone
+oxymorphone hydrochloride
+oxyphenbutazone
+oxyphencyclimine
+oxyphencyclimine hydrochloride
+oxyphenonium
+oxyphenonium bromide
+oxytetracycline
+oxytetracycline calcium
+oxytetracycline hydrochloride
+oxytocin
+ozanimod
+ozanimod hydrochloride
+ozenoxacin
+paclitaxel
+pacritinib
+pacritinib citrate
+pafolacianine
+pafolacianine sodium
+palbociclib
+palifermin
+paliperidone
+paliperidone palmitate
+palivizumab
+palonosetron
+palonosetron hydrochloride
+palopegteriparatide
+palovarotene
+paltusotine
+paltusotine hydrochloride
+pamidronate
+pamidronate disodium
+pancuronium
+pancuronium bromide
+panitumumab
+panobinostat
+panobinostat lactate
+pantoprazole
+pantoprazole sodium
+pantothenic acid
+paramethadione
+paramethasone
+paramethasone acetate
+parathyroid hormone
+pargyline
+pargyline hydrochloride
+paricalcitol
+paritaprevir
+paromomycin
+paromomycin sulfate
+paroxetine
+paroxetine hydrochloride
+paroxetine mesylate
+pasireotide
+pasireotide diaspartate
+pasireotide pamoate
+patiromer sorbitex
+patiromer sorbitex calcium
+patisiran
+patisiran sodium
+pazopanib
+pazopanib hydrochloride
+pegademase bovine
+pegaptanib
+pegaptanib sodium
+pegaspargase
+pegcetacoplan
+pegfilgrastim
+pegfilgrastim-apgf
+pegfilgrastim-bmez
+pegfilgrastim-cbqv
+pegfilgrastim-fpgk
+pegfilgrastim-jmdb
+pegfilgrastim-pbbk
+pegfilgrastim-pccg
+pegfilgrastim-unne
+peginesatide
+peginesatide acetate
+pegloticase
+pegulicianine
+pegulicianine acetate
+pegunigalsidase alfa-iwxj
+pegvaliase-pqpz
+pegvisomant
+pegzilarginase-nbln
+pembrolizumab
+pemetrexed
+pemetrexed dipotassium
+pemetrexed disodium
+pemetrexed ditromethamine
+pemetrexed sodium
+pemigatinib
+pemirolast
+pemirolast potassium
+pemoline
+penbutolol
+penbutolol sulfate
+penciclovir
+penicillamine
+penicillin g
+penicillin g benzathine
+penicillin g potassium
+penicillin g procaine
+penicillin g sodium
+penicillin v
+penicillin v potassium
+penpulimab-kcqx
+pentagastrin
+pentamidine isethionate
+pentazocine
+pentazocine hydrochloride
+pentazocine lactate
+pentetate calcium trisodium
+pentetate zinc trisodium
+pentobarbital
+pentobarbital sodium
+pentolinium
+pentolinium tartrate
+pentosan polysulfate
+pentosan polysulfate sodium
+pentostatin
+pentoxifylline
+peramivir
+perampanel
+perflexane
+perflubron
+perfluorohexyloctane
+perfluoropolymethylisopropyl ether
+perflutren
+pergolide
+pergolide mesylate
+perindopril arginine
+perindopril erbumine
+permethrin
+perphenazine
+pertuzumab
+pertuzumab trastuzumab and hyaluronidase-zzxf
+pertuzumab-dpzb
+pexidartinib
+pexidartinib hydrochloride
+phenacemide
+phenazopyridine
+phenazopyridine hydrochloride
+phendimetrazine
+phendimetrazine tartrate
+phenelzine
+phenelzine sulfate
+phenindione
+pheniramine
+pheniramine maleate
+phenmetrazine
+phenmetrazine hydrochloride
+phenobarbital
+phenobarbital sodium
+phenoxybenzamine
+phenoxybenzamine hydrochloride
+phenprocoumon
+phensuximide
+phentermine
+phentermine hydrochloride
+phentermine resin complex
+phentolamine
+phentolamine mesylate
+phenyl aminosalicylate
+phenylbutazone
+phenylephrine
+phenylephrine bitartrate
+phenylephrine hydrochloride
+phenylpropanolamine
+phenylpropanolamine hydrochloride
+phenylpropanolamine polistirex
+phenytoin
+phenytoin sodium
+phosphoric acid
+phytonadione
+pibrentasvir
+pilocarpine
+pilocarpine hydrochloride
+pimavanserin
+pimavanserin tartrate
+pimecrolimus
+pimozide
+pinacidil
+pindolol
+pioglitazone
+pioglitazone hydrochloride
+pipecuronium
+pipecuronium bromide
+piperacetazine
+piperacillin
+piperacillin sodium
+piperacillin tazobactam
+piperazine
+piperazine citrate
+piperonyl butoxide
+pipobroman
+pirbuterol
+pirbuterol acetate
+pirfenidone
+piroxicam
+pirtobrutinib
+pitavastatin
+pitavastatin calcium
+pitavastatin magnesium
+pitavastatin sodium
+pitolisant
+pitolisant hydrochloride
+pivekimab sunirine-pvzy
+pivmecillinam
+pivmecillinam hydrochloride
+plazomicin
+plazomicin sulfate
+plecanatide
+plerixafor
+plicamycin
+plozasiran
+plozasiran sodium
+podofilox
+polatuzumab vedotin-piiq
+polidocanol
+polyestradiol
+polyestradiol phosphate
+polymyxin b
+polymyxin b sulfate
+polytetrafluoroethylene
+polythiazide
+pomalidomide
+ponatinib
+ponatinib hydrochloride
+ponesimod
+poractant alfa
+porcine secretin
+porfimer
+porfimer sodium
+posaconazole
+potassium
+potassium acetate
+potassium aminosalicylate
+potassium bitartrate
+potassium chloride
+potassium citrate
+potassium iodide
+potassium lactate
+potassium oxybate
+potassium perchlorate
+potassium phosphate dibasic
+potassium phosphate monobasic
+potassium sulfate
+povidone-iodine
+pozelimab-bbfg
+prabotulinumtoxina-xvfs
+pralatrexate
+pralidoxime
+pralidoxime chloride
+pralsetinib
+pramipexole dihydrochloride
+pramlintide
+pramlintide acetate
+pramoxine
+pramoxine hydrochloride
+prasterone
+prasugrel
+prasugrel hydrochloride
+pravastatin
+pravastatin sodium
+prazepam
+praziquantel
+prazosin
+prazosin hydrochloride
+prednicarbate
+prednisolone
+prednisolone acetate
+prednisolone sodium phosphate
+prednisolone tebutate
+prednisone
+pregabalin
+pretomanid
+prilocaine
+prilocaine hydrochloride
+primaquine
+primaquine phosphate
+primidone
+probenecid
+probucol
+procainamide
+procainamide hydrochloride
+procaine
+procaine hydrochloride
+procaine merethoxylline
+procarbazine
+procarbazine hydrochloride
+prochlorperazine
+prochlorperazine edisylate
+prochlorperazine maleate
+procyclidine
+procyclidine hydrochloride
+progesterone
+proguanil
+proguanil hydrochloride
+promazine
+promazine hydrochloride
+promethazine
+promethazine hydrochloride
+propafenone
+propafenone hydrochloride
+propantheline
+propantheline bromide
+proparacaine
+proparacaine hydrochloride
+propiolactone
+propiomazine
+propiomazine hydrochloride
+propofol
+propoxycaine
+propoxycaine hydrochloride
+propoxyphene
+propoxyphene hydrochloride
+propoxyphene napsylate
+propranolol
+propranolol hydrochloride
+propyliodone
+propylthiouracil
+protamine
+protamine sulfate
+protein hydrolysate
+protirelin
+protokylol
+protokylol hydrochloride
+protriptyline
+protriptyline hydrochloride
+prucalopride
+prucalopride succinate
+pseudoephedrine
+pseudoephedrine hydrochloride
+pseudoephedrine polistirex
+pseudoephedrine sulfate
+purified water
+pyrazinamide
+pyrethrins
+pyridostigmine
+pyridostigmine bromide
+pyridoxine
+pyridoxine hydrochloride
+pyrilamine
+pyrilamine maleate
+pyrimethamine
+pyrithione zinc
+pyrvinium
+pyrvinium pamoate
+quazepam
+quetiapine
+quetiapine fumarate
+quinapril
+quinapril hydrochloride
+quinestrol
+quinethazone
+quinidine
+quinidine gluconate
+quinidine polygalacturonate
+quinidine sulfate
+quinine
+quinine sulfate
+quinupristin
+quizartinib dihydrochloride
+rabeprazole
+rabeprazole sodium
+raloxifene
+raloxifene hydrochloride
+raltegravir
+raltegravir potassium
+ramelteon
+ramipril
+ramucirumab
+ranibizumab
+ranibizumab-eqrn
+ranibizumab-hkdz
+ranibizumab-leyk
+ranibizumab-nuna
+ranitidine
+ranitidine bismuth
+ranitidine bismuth citrate
+ranitidine hydrochloride
+ranolazine
+rapacuronium
+rapacuronium bromide
+rasagiline
+rasagiline mesylate
+rasburicase
+rauwolfia serpentina root
+ravulizumab-cwvz
+raxibacumab
+regadenoson
+regorafenib
+relacorilant
+relatlimab-rmbw
+relebactam
+relugolix
+remdesivir
+remibrutinib
+remifentanil
+remifentanil hydrochloride
+remimazolam
+remimazolam besylate
+repaglinide
+repository corticotropin
+repotrectinib
+rescinnamine
+reserpine
+reslizumab
+resmetirom
+retapamulin
+reteplase
+retifanlimab-dlwr
+revefenacin
+revumenib
+revumenib citrate
+rezafungin
+rezafungin acetate
+ribavirin
+ribociclib
+ribociclib succinate
+riboflavin
+rifabutin
+rifampin
+rifamycin
+rifamycin sodium
+rifapentine
+rifaximin
+rilonacept
+rilpivirine
+rilpivirine hydrochloride
+riluzole
+rilzabrutinib
+rimantadine
+rimantadine hydrochloride
+rimegepant
+rimegepant sulfate
+rimexolone
+riociguat
+ripretinib
+risankizumab-rzaa
+risdiplam
+risedronate
+risedronate sodium
+risperidone
+ritlecitinib
+ritlecitinib tosylate
+ritodrine
+ritodrine hydrochloride
+ritonavir
+rituximab
+rituximab-abbs
+rituximab-arrx
+rituximab-cdxx
+rituximab-pvvr
+rivaroxaban
+rivastigmine
+rivastigmine tartrate
+rizatriptan
+rizatriptan benzoate
+rocuronium
+rocuronium bromide
+rofecoxib
+roflumilast
+rolapitant
+rolapitant hydrochloride
+romidepsin
+romiplostim
+romosozumab-aqqg
+ropinirole
+ropinirole hydrochloride
+ropivacaine
+ropivacaine hydrochloride
+rosiglitazone
+rosiglitazone maleate
+rosuvastatin
+rosuvastatin calcium
+rosuvastatin zinc
+rotigotine
+rozanolixizumab-noli
+rucaparib camsylate
+rufinamide
+ruxolitinib
+ruxolitinib phosphate
+sacituzumab govitecan-hziy
+sacrosidase
+sacubitril
+safflower oil
+safinamide
+safinamide mesylate
+salmeterol xinafoate
+samidorphan l-malate
+sapropterin dihydrochloride
+saquinavir
+saquinavir mesylate
+saralasin
+saralasin acetate
+sarecycline
+sarecycline hydrochloride
+sargramostim
+sarilumab
+satralizumab
+saxagliptin
+saxagliptin hydrochloride
+scopolamine
+sebelipase alfa
+sebetralstat
+secnidazole
+secobarbital
+secobarbital sodium
+secretin
+secretin synthetic human
+secretin synthetic porcine
+secukinumab
+segesterone
+segesterone acetate
+seladelpar lysine
+selegiline
+selegiline hydrochloride
+selenious acid
+selenium sulfide
+selexipag
+selinexor
+selpercatinib
+selumetinib
+selumetinib sulfate
+semaglutide
+sepiapterin
+serdexmethylphenidate
+serdexmethylphenidate chloride
+sermorelin
+sermorelin acetate
+sertaconazole
+sertaconazole nitrate
+sertraline
+sertraline hydrochloride
+setmelanotide
+setmelanotide acetate
+sevabertinib
+sevelamer
+sevelamer carbonate
+sevelamer hydrochloride
+sevoflurane
+sibeprenlimab-szsi
+sibutramine
+sibutramine hydrochloride
+sildenafil
+sildenafil citrate
+silodosin
+siltuximab
+silver sulfadiazine
+simeprevir
+simeprevir sodium
+simethicone
+simethicone-cellulose
+simvastatin
+sincalide
+sinecatechins
+siponimod
+sirolimus
+sitagliptin
+sitagliptin and metformin
+sitagliptin and metformin hydrochloride
+sitagliptin hydrochloride
+sitagliptin metformin
+sitagliptin metformin hydrochloride
+sitagliptin phosphate
+sodium
+sodium acetate
+sodium ascorbate
+sodium benzoate
+sodium bicarbonate
+sodium carbonate
+sodium chloride
+sodium citrate
+sodium ferric gluconate complex
+sodium fluoride
+sodium gluconate
+sodium glycerophosphate
+sodium lactate
+sodium monofluorophosphate
+sodium nitrite
+sodium nitroprusside
+sodium oxybate
+sodium phenylacetate
+sodium phenylbutyrate
+sodium phosphate
+sodium phosphate dibasic
+sodium phosphate dibasic anhydrous
+sodium phosphate dibasic heptahydrate
+sodium phosphate monobasic
+sodium phosphate monobasic anhydrous
+sodium phosphate monobasic monohydrate
+sodium picosulfate
+sodium polystyrene sulfonate
+sodium succinate
+sodium sulfate
+sodium sulfate anhydrous
+sodium tetradecyl
+sodium tetradecyl sulfate
+sodium thiosulfate
+sodium zirconium cyclosilicate
+sofosbuvir
+sofpironium
+sofpironium bromide
+solifenacin
+solifenacin succinate
+solriamfetol
+solriamfetol hydrochloride
+somapacitan-beco
+somatrogon-ghla
+somatropin
+somatropin recombinant
+sonidegib
+sonidegib phosphate
+sonrotoclax
+sorafenib
+sorafenib tosylate
+sorbitol
+sotagliflozin
+sotalol
+sotalol hydrochloride
+sotatercept-csrk
+sotorasib
+soybean oil
+sparfloxacin
+sparsentan
+spectinomycin
+spectinomycin hydrochloride
+spesolimab-sbzo
+spinosad
+spirapril
+spirapril hydrochloride
+spironolactone
+stanozolol
+stavudine
+sterile water
+sterile water for injection
+sterile water for irrigation
+stiripentol
+streptomycin
+streptomycin sulfate
+streptozocin
+succimer
+succinylcholine
+succinylcholine chloride
+sucralfate
+sufentanil
+sufentanil citrate
+sugammadex
+sugammadex sodium
+sulbactam
+sulbactam sodium
+sulconazole
+sulconazole nitrate
+sulfacetamide
+sulfacetamide sodium
+sulfacytine
+sulfadiazine
+sulfadiazine sodium
+sulfadoxine
+sulfamerazine
+sulfameter
+sulfamethizole
+sulfamethoxazole
+sulfanilamide
+sulfaphenazole
+sulfapyridine
+sulfasalazine
+sulfinpyrazone
+sulfisoxazole
+sulfisoxazole acetyl
+sulfisoxazole diolamine
+sulfoxone
+sulfoxone sodium
+sulfur
+sulindac
+sulopenem etzadroxil
+sumatriptan
+sumatriptan succinate
+sunitinib
+sunitinib malate
+sunvozertinib
+suprofen
+sutilains
+sutimlimab-jome
+suvorexant
+suzetrigine
+tacrine
+tacrine hydrochloride
+tacrolimus
+tadalafil
+tafamidis
+tafamidis meglumine
+tafasitamab-cxix
+tafenoquine
+tafenoquine succinate
+tafluprost
+tagraxofusp-erzs
+talazoparib
+talazoparib tosylate
+talbutal
+talc
+taletrectinib adipate
+taliglucerase alfa
+talquetamab-tgvs
+tamoxifen
+tamoxifen citrate
+tamsulosin
+tamsulosin hydrochloride
+tannic acid
+tapentadol
+tapentadol hydrochloride
+tapinarof
+tarlatamab-dlle
+tartaric acid
+tasimelteon
+taurolidine
+taurursodiol
+tavaborole
+tazarotene
+tazemetostat
+tazemetostat hydrobromide
+tazobactam
+tazobactam sodium
+tbo-filgrastim
+tebentafusp-tebn
+tebipenem pivoxil
+tebipenem pivoxil hydrobromide
+teclistamab-cqyv
+tecovirimat
+tedizolid
+tedizolid phosphate
+teduglutide
+tegaserod
+tegaserod maleate
+telaprevir
+telavancin
+telavancin hydrochloride
+telbivudine
+telisotuzumab vedotin-tllv
+telithromycin
+telmisartan
+telotristat etiprate
+temazepam
+temozolomide
+temsirolimus
+tenapanor
+tenapanor hydrochloride
+tenecteplase
+teniposide
+tenofovir
+tenofovir alafenamide
+tenofovir alafenamide fumarate
+tenofovir disoproxil
+tenofovir disoproxil fumarate
+teplizumab-mzwv
+tepotinib
+tepotinib hydrochloride
+teprotumumab-trbw
+terazosin
+terazosin hydrochloride
+terbinafine
+terbinafine hydrochloride
+terbutaline
+terbutaline sulfate
+terconazole
+teriflunomide
+teriparatide
+teriparatide acetate
+terlipressin
+terlipressin acetate
+tesamorelin
+tesamorelin acetate
+testolactone
+testosterone
+testosterone cypionate
+testosterone enanthate
+testosterone propionate
+testosterone undecanoate
+tetrabenazine
+tetracaine
+tetracaine hydrochloride
+tetracycline
+tetracycline hydrochloride
+tetracycline phosphate complex
+tetrahydrozoline
+tetrahydrozoline hydrochloride
+tezacaftor
+tezepelumab-ekko
+thalidomide
+theophylline
+theophylline sodium glycinate
+thiabendazole
+thiamine
+thiamine hydrochloride
+thiamylal
+thiamylal sodium
+thiethylperazine
+thiethylperazine malate
+thiethylperazine maleate
+thioguanine
+thiopental
+thiopental sodium
+thioridazine
+thioridazine hydrochloride
+thiotepa
+thiothixene
+thiothixene hydrochloride
+thonzonium
+thonzonium bromide
+thyrotropin alfa
+tiagabine
+tiagabine hydrochloride
+ticagrelor
+ticarcillin
+ticarcillin disodium
+ticlopidine
+ticlopidine hydrochloride
+tigecycline
+tildrakizumab-asmn
+tiludronate
+tiludronate disodium
+timolol
+timolol maleate
+tinidazole
+tinzaparin
+tinzaparin sodium
+tioconazole
+tiopronin
+tiotropium
+tiotropium bromide
+tipiracil
+tipiracil hydrochloride
+tipranavir
+tirbanibulin
+tirofiban
+tirofiban hydrochloride
+tirzepatide
+tislelizumab-jsgr
+tisotumab vedotin-tftv
+titanium dioxide
+tividenofusp alfa-eknm
+tivozanib
+tivozanib hydrochloride
+tizanidine
+tizanidine hydrochloride
+tobramycin
+tobramycin sulfate
+tocainide
+tocainide hydrochloride
+tocilizumab
+tocilizumab-aazg
+tocilizumab-anoh
+tocilizumab-bavi
+tocopherol
+tocopherol acetate
+tofacitinib
+tofacitinib citrate
+tofersen
+tolazamide
+tolazoline
+tolazoline hydrochloride
+tolbutamide
+tolbutamide sodium
+tolcapone
+tolmetin
+tolmetin sodium
+tolterodine
+tolterodine tartrate
+tolvaptan
+topiramate
+topotecan
+topotecan hydrochloride
+toremifene
+toremifene citrate
+toripalimab-tpzi
+torsemide
+tovorafenib
+trabectedin
+tradipitant
+tralokinumab
+tramadol
+tramadol hydrochloride
+trametinib
+trametinib dimethyl sulfoxide
+trandolapril
+tranexamic acid
+tranylcypromine
+tranylcypromine sulfate
+trastuzumab
+trastuzumab and hyaluronidase-oysk
+trastuzumab-anns
+trastuzumab-dkst
+trastuzumab-dttb
+trastuzumab-pkrb
+trastuzumab-qyyp
+trastuzumab-strf
+travoprost
+trazodone
+trazodone hydrochloride
+tremelimumab-actl
+treosulfan
+treprostinil
+treprostinil diolamine
+treprostinil sodium
+tretinoin
+triamcinolone
+triamcinolone acetonide
+triamcinolone diacetate
+triamcinolone hexacetonide
+triamterene
+triazolam
+trichlormethiazide
+triclabendazole
+triclofos
+triclofos sodium
+triclosan
+tridihexethyl
+tridihexethyl chloride
+trientine
+trientine hydrochloride
+trientine tetrahydrochloride
+trifarotene
+trifluoperazine
+trifluoperazine hydrochloride
+triflupromazine
+triflupromazine hydrochloride
+trifluridine
+triheptanoin
+trihexyphenidyl
+trihexyphenidyl hydrochloride
+trilaciclib dihydrochloride
+trilostane
+trimeprazine
+trimeprazine tartrate
+trimethadione
+trimethaphan camsylate
+trimethobenzamide
+trimethobenzamide hydrochloride
+trimethoprim
+trimethoprim hydrochloride
+trimethoprim sulfate
+trimetrexate glucuronate
+trimipramine
+trimipramine maleate
+trioxsalen
+tripelennamine
+tripelennamine citrate
+tripelennamine hydrochloride
+triprolidine
+triprolidine hydrochloride
+triptorelin
+triptorelin pamoate
+trofinetide
+troglitazone
+trolamine polypeptide oleate condensate
+troleandomycin
+tromethamine
+tropicamide
+trospium
+trospium chloride
+trovafloxacin
+trovafloxacin mesylate
+trypan blue
+tubocurarine
+tubocurarine chloride
+tucatinib
+tyloxapol
+tyropanoate
+tyropanoate sodium
+tyrosine
+ublituximab-xiiy
+ubrogepant
+ulipristal
+ulipristal acetate
+umbralisib
+umbralisib tosylate
+umeclidinium
+umeclidinium bromide
+undecoylium chloride iodine complex
+unoprostone isopropyl
+upadacitinib
+uracil mustard
+urea
+uridine triacetate
+urofollitropin
+urokinase
+ursodiol
+ustekinumab
+ustekinumab-aauz
+ustekinumab-aekn
+ustekinumab-auub
+ustekinumab-hmny
+ustekinumab-kfce
+ustekinumab-srlf
+ustekinumab-stba
+ustekinumab-ttwe
+vaborbactam
+vadadustat
+valacyclovir
+valacyclovir hydrochloride
+valbenazine
+valbenazine tosylate
+valdecoxib
+valganciclovir
+valganciclovir hydrochloride
+valproate
+valproate sodium
+valproic acid
+valrubicin
+valsartan
+vamorolone
+vancomycin
+vancomycin hydrochloride
+vandetanib
+vanzacaftor
+vanzacaftor calcium
+vardenafil
+vardenafil hydrochloride
+varenicline
+varenicline tartrate
+vasopressin
+vasopressin tannate
+vecuronium
+vecuronium bromide
+vedolizumab
+velaglucerase alfa
+veligrotug-vvze
+velmanase alfa-tycv
+velpatasvir
+vemurafenib
+venetoclax
+venlafaxine
+venlafaxine besylate
+venlafaxine hydrochloride
+vepdegestrant
+verapamil
+verapamil hydrochloride
+verard
+veratrum viride root
+vericiguat
+verteporfin
+vestronidase alfa-vjbk
+vibegron
+vidarabine
+vigabatrin
+vilanterol trifenatate
+vilazodone
+vilazodone hydrochloride
+viloxazine
+viloxazine hydrochloride
+viltolarsen
+vimseltinib
+vinblastine
+vinblastine sulfate
+vincristine
+vincristine sulfate
+vinorelbine
+vinorelbine tartrate
+viomycin
+viomycin sulfate
+vismodegib
+vitamin a
+vitamin a palmitate
+vitamin e
+vitamin k
+voclosporin
+vonoprazan
+vonoprazan fumarate
+vorapaxar
+vorapaxar sulfate
+vorasidenib
+voriconazole
+vorinostat
+vortioxetine
+vortioxetine hydrobromide
+vosoritide
+voxelotor
+voxilaprevir
+vutrisiran
+vutrisiran sodium
+warfarin
+warfarin potassium
+warfarin sodium
+white petrolatum
+xanomeline
+xanomeline tartrate
+xylose
+zafirlukast
+zalcitabine
+zaleplon
+zanamivir
+zanidatamab-hrii
+zanubrutinib
+zavegepant
+zavegepant hydrochloride
+zenocutuzumab-zbco
+ziconotide
+ziconotide acetate
+zidebactam
+zidesamtinib
+zidovudine
+ziftomenib
+zileuton
+zilucoplan
+zilucoplan sodium
+zinc
+zinc acetate
+zinc chloride
+zinc oxide
+zinc sulfate
+ziprasidone
+ziprasidone hydrochloride
+ziprasidone mesylate
+ziv-aflibercept
+zolbetuximab-clzb
+zoledronic acid
+zoliflodacin
+zolmitriptan
+zolpidem
+zolpidem tartrate
+zongertinib
+zonisamide
+zuranolone
