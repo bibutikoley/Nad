@@ -1,6 +1,6 @@
 """Nad voice agent worker.
 
-Pipeline: LiveKit room audio -> VAD -> STT (mlx-audio) -> LLM (OpenAI-compatible)
+Pipeline: LiveKit room audio -> VAD -> STT (stt_server.py) -> LLM (OpenAI-compatible)
           -> TTS (mlx-audio) -> back into the room.
 
 Run:  lk agent dev agent.py       (local dev, auto-reload)
@@ -40,7 +40,14 @@ load_dotenv()
 
 logger = logging.getLogger("nad")
 
-SPEECH_BASE_URL = os.environ.get("SPEECH_BASE_URL", "http://localhost:8000/v1")
+# Two speech servers, one URL each: STT on stt_server.py (:8001), TTS on mlx-audio
+# (:8000) -- see README.md -> "Processes". A single SPEECH_BASE_URL covered both while
+# one mlx-audio process served both endpoints; it is gone rather than kept as a third
+# way to say the same thing, now that the STT model has outgrown that server.
+# `or` rather than a default argument: an empty `STT_BASE_URL=` in .env is an easy typo,
+# and falling back to the default beats building an unusable base URL out of it.
+STT_BASE_URL = os.environ.get("STT_BASE_URL") or "http://localhost:8001/v1"
+TTS_BASE_URL = os.environ.get("TTS_BASE_URL") or "http://localhost:8000/v1"
 STT_LANGUAGE = os.environ.get("STT_LANGUAGE", "en")
 
 # Where to collect a transcript the client parked for a resumed conversation. The token
@@ -72,11 +79,24 @@ ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_A
 # reads the transcript, and so catches noise that was loud enough to pass but decoded to
 # nothing meaningful.
 #
-# This list is transducer-specific, and would be the wrong list for Whisper. Nemotron is an
-# RNNT: it emits a token only when the audio supports one, so on noise it returns an empty
-# string (measured: silence, hiss and a desk thump all transcribe to ""), and StreamAdapter
-# drops those before they ever reach a turn. What it *does* produce on marginal audio is
-# truncated real speech -- a VAD-clipped "Can you" -- never invented content.
+# This list is transducer-specific, and would be the wrong list for Whisper. The current
+# default is an RNNT: it emits a token only when the audio supports one, so on noise it
+# returns an empty string (measured: silence, hiss and a desk thump all transcribe to ""),
+# and StreamAdapter drops those before they ever reach a turn. What it *does* produce on
+# marginal audio is truncated real speech -- a VAD-clipped "Can you" -- never invented
+# content.
+#
+# Unchanged across the swap from Nemotron 3.5 ASR to omi-med-stt-v1, and worth saying so
+# rather than leaving it to read as an oversight: omi is a fine-tune of
+# nvidia/parakeet-tdt-0.6b-v2, a FastConformer TDT/RNNT from the same family, and its medical
+# adapter is a residual block inserted *inside* each encoder block. It changes what the
+# encoder represents, not how the decoder emits, so the emit-only-when-supported property
+# this list rests on is intact.
+#
+# One thing is new, though: that empty transcript now survives a hop that natively destroys
+# it. `omi_stt.mlx_runtime.transcribe_mlx` *raises* on an empty result, and stt_server.py
+# catches exactly that and returns {"text": ""}. Remove that catch and every noise segment
+# becomes an HTTP 500 and a retry -- the gate design inverts.
 #
 # Whisper fails the opposite way and needs a different list entirely. Its decoder is
 # autoregressive and trained on subtitle data, so near-silence makes it invent a fluent
@@ -160,20 +180,25 @@ class NadAssistant(Agent):
 server = AgentServer()
 
 # Long enough to cover a first-ever HuggingFace download of Kokoro and the STT model,
-# which is the worst case this warm-up exists to absorb (~1.2 GB for Nemotron ASR, and
+# which is the worst case this warm-up exists to absorb (~940 MB for omi-med-stt q8, and
 # nearly 3 GB if STT_MODEL is pointed back at Whisper large-v3).
 _WARMUP_TIMEOUT = aiohttp.ClientTimeout(total=600)
 
 
 async def _warm_speech_models() -> None:
-    """Force mlx-audio to load both speech models before we claim to be listening.
+    """Load both speech models before we claim to be listening.
 
-    mlx-audio loads each model on its first real request, so without this the first
-    user turn pays the download+load cost -- and the client has already been told the
-    agent is listening. The plugins' own prewarm() hooks don't help: openai.TTS.prewarm
-    is a bare `GET /` and the base STT.prewarm is a no-op, neither of which touches
-    model weights. So do a real synthesis and feed its audio straight back into a real
-    transcription.
+    Each server loads its model on the first real request, so without this the first user
+    turn pays the download+load cost -- and the client has already been told the agent is
+    listening. The plugins' own prewarm() hooks don't help: openai.TTS.prewarm is a bare
+    `GET /` and the base STT.prewarm is a no-op, neither of which touches model weights. So
+    do a real synthesis and feed its audio straight back into a real transcription.
+
+    Crosses two servers now (TTS on mlx-audio, STT on stt_server.py) and needs no special
+    handling for it, since the WAV already round-trips through this process between the two
+    calls. That makes it a better check than it was: it now proves both endpoints answer.
+    stt_server.py also preloads itself at startup, so in practice this finds the STT side
+    already warm -- it stays for the TTS half and for the end-to-end signal.
 
     Best-effort: a failure here just restores the previous behaviour (slow first turn),
     so it must never fail the job.
@@ -181,7 +206,7 @@ async def _warm_speech_models() -> None:
     try:
         async with aiohttp.ClientSession(timeout=_WARMUP_TIMEOUT) as http:
             async with http.post(
-                f"{SPEECH_BASE_URL}/audio/speech",
+                f"{TTS_BASE_URL}/audio/speech",
                 json={
                     "model": ENV["TTS_MODEL"],
                     "voice": os.environ.get("TTS_VOICE", "af_heart"),
@@ -204,10 +229,16 @@ async def _warm_speech_models() -> None:
 
         async with aiohttp.ClientSession(timeout=_WARMUP_TIMEOUT) as http:
             async with http.post(
-                f"{SPEECH_BASE_URL}/audio/transcriptions", data=form
+                f"{STT_BASE_URL}/audio/transcriptions", data=form
             ) as response:
                 response.raise_for_status()
-                await response.read()
+                transcription = await response.json()
+
+        # Cheap early warning that the STT is serving something other than what we think:
+        # this audio is synthesised speech, so an empty transcript here means the model
+        # loaded but is not hearing words. Not fatal -- the whole function is best-effort.
+        if not (transcription.get("text") or "").strip():
+            logger.warning("STT returned nothing for synthesised speech; check STT_MODEL")
 
         logger.info("speech models warm")
     except Exception:
@@ -309,7 +340,8 @@ async def entrypoint(ctx: agents.JobContext) -> None:
             # exactly this pre-roll. Shrinking it silently degrades the gate.
             prefix_padding_duration=0.5,
         ),
-        # mlx-audio exposes an OpenAI-compatible /v1/audio/transcriptions.
+        # STT_BASE_URL exposes an OpenAI-compatible /v1/audio/transcriptions -- by default
+        # stt_server.py on :8001, or mlx-audio on :8000 for any model it can route.
         # The plugin treats non-realtime models as batch STT; the session wraps it
         # with a VAD StreamAdapter automatically.
         #
@@ -322,20 +354,22 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         stt=NoiseGatedSTT(
             wrapped=openai.STT(
                 model=ENV["STT_MODEL"],
-                base_url=SPEECH_BASE_URL,
+                base_url=STT_BASE_URL,
                 api_key="local",
                 use_realtime=False,
-                # Not a Whisper-style language *hint* here: Nemotron conditions its encoder
-                # on a learned per-language prompt vector, so this picks the prompt index
-                # (its config lists 121 keys, "en" among them). Left unset it would use the
-                # model's "auto" prompt, which is a real option but costs accuracy on the
-                # one language this deployment actually speaks.
+                # Inert for the current default: omi-med-stt-v1 is English-only and has no
+                # language conditioning of any kind, and stt_server.py ignores the field.
+                # Still sent, and still worth keeping: it is load-bearing the moment STT_MODEL
+                # goes back to a multilingual model on mlx-audio (Nemotron conditions its
+                # encoder on a learned per-language prompt vector, Whisper takes it as a
+                # decoding hint), and it is what the plugin tags the SpeechEvent's language
+                # with -- correct at "en" either way.
                 language=STT_LANGUAGE,
                 # `temperature` is deliberately absent. It was here for Whisper, whose
                 # near-silence hallucinations come from sampling; an RNNT decodes greedily
                 # by construction, so there is nothing for it to mean. It was a no-op
-                # regardless -- mlx-audio's /v1/audio/transcriptions declares no such field
-                # and FastAPI silently drops unrecognised form fields.
+                # regardless -- neither mlx-audio's /v1/audio/transcriptions nor stt_server.py
+                # declares such a field, and both drop unrecognised form fields silently.
             ),
             gate=NoiseGate(),
         ),
@@ -349,7 +383,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         tts=openai.TTS(
             model=ENV["TTS_MODEL"],
             voice=os.environ.get("TTS_VOICE", "af_heart"),
-            base_url=SPEECH_BASE_URL,
+            base_url=TTS_BASE_URL,
             api_key="local",
             response_format="wav",
         ),
@@ -366,11 +400,21 @@ async def entrypoint(ctx: agents.JobContext) -> None:
             #
             # min_words is deliberately left at its 0 default. Raising it would make the
             # agent wait for a batch-STT round trip before it stops talking -- a visible
-            # latency regression -- and resume_false_interruption below already undoes a
-            # barge-in caused by noise, which gets the same outcome for free.
+            # latency regression, and a *correctness* one here: every extra millisecond the
+            # agent keeps talking is another millisecond of its own voice echoing into the
+            # segment the STT is about to transcribe. resume_false_interruption below
+            # already undoes a barge-in caused by noise, which gets the same outcome free.
+            #
+            # min_duration is the length of that overlap, so it is the one knob that
+            # directly bounds double-talk contamination: the agent keeps speaking for at
+            # least this long after the user starts, and the mic hears both. Lowered from
+            # 0.3 for that reason. It cannot go to zero -- a single transient would stop
+            # the agent mid-word -- and it does not fix the problem on its own, because the
+            # VAD's 0.5 s pre-roll captures agent audio from *before* the user's onset
+            # regardless. See README.md -> "Background noise" on talking over the agent.
             interruption={
                 "enabled": True,
-                "min_duration": 0.3,
+                "min_duration": 0.2,
                 "resume_false_interruption": True,
                 "false_interruption_timeout": 2.0,
             },

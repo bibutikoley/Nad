@@ -17,9 +17,12 @@
 import AVFAudio
 import Combine
 import LiveKit
+import OSLog
 
 @MainActor
 final class VoiceSessionController: ObservableObject {
+
+    private static let log = Logger(subsystem: "io.bibuti.nad-ios", category: "audio")
 
     /// What the user is actually allowed to believe about the session.
     ///
@@ -345,7 +348,37 @@ final class VoiceSessionController: ObservableObject {
         Task { [weak self] in
             guard let self, !self.isMicMuted else { return }
             _ = try? await self.session.room.localParticipant.setMicrophone(enabled: true)
+            Self.logAudioProcessingState()
         }
+    }
+
+    /// Logs what the capture chain actually resolved to, once the mic is genuinely live.
+    ///
+    /// `audioCaptureOptions` above *requests* echo cancellation; whether Apple's
+    /// Voice-Processing I/O is actually running it is a separate question, and one that
+    /// only has an answer after input is configured — `isActive` reads `false` before that.
+    /// Worth knowing, because it decides where a double-talk problem lives: if the agent's
+    /// own voice is being transcribed back as user speech, either AEC is off (fix it here)
+    /// or AEC is on and leaking residual during double-talk (fix it by shortening the
+    /// overlap window in nad-backend's `agent.py`, or by using earphones).
+    ///
+    /// Read it in Console.app or Xcode's console, subsystem `io.bibuti.nad-ios`.
+    private static func logAudioProcessingState() {
+        let platform = AudioManager.shared.platformVoiceProcessingState
+        log.info(
+            """
+            capture chain: \
+            voiceProcessing(requested: \(platform.voiceProcessingEnabled.isRequested, privacy: .public), \
+            active: \(platform.voiceProcessingEnabled.isActive, privacy: .public)) \
+            bypassed(active: \(platform.voiceProcessingBypassed.isActive, privacy: .public)) \
+            aec(available: \(platform.echoCancellation.isAvailable, privacy: .public), \
+            requested: \(platform.echoCancellation.isRequested, privacy: .public), \
+            active: \(platform.echoCancellation.isActive, privacy: .public)) \
+            ns(active: \(platform.noiseSuppression.isActive, privacy: .public)) \
+            agc(active: \(platform.autoGainControl.isActive, privacy: .public)) \
+            resolved: \(String(describing: AudioManager.shared.audioProcessingState), privacy: .public)
+            """
+        )
     }
 
     func toggleMicrophone() async {

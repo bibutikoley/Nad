@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Runs the two native dev processes — the mlx-audio speech server and the agent
-# worker — in one terminal instead of two. Ctrl+C, or either process exiting on
-# its own (crash), stops both (and everything each one spawned).
+# Runs the three native dev processes — the mlx-audio speech server (TTS), the STT
+# server, and the agent worker — in one terminal instead of three. Ctrl+C, or any one
+# of them exiting on its own (crash), stops the rest (and everything each one spawned).
 #
 # LiveKit + the token server run separately via `docker compose up` — see README.md.
 set -o pipefail
@@ -61,6 +61,18 @@ trap cleanup INT TERM EXIT
 
 scripts/speech-server.sh &
 pids+=("$!"); names+=("speech server")
+
+# Unconditional, so STT_BASE_URL always has something listening. This was gated on
+# STT_BACKEND being set, which made deleting that one line from .env fail as a connection
+# refused on the first spoken turn rather than at startup — everything came up looking
+# healthy and only the first sentence found the hole. The default STT model can't be
+# served by anything else, so the server is part of the stack, not an option.
+#
+# Before the agent, so it is already binding while the worker boots and its warm-up
+# finds a listener rather than a refused connection.
+scripts/stt-server.sh &
+pids+=("$!"); names+=("stt server (${STT_BACKEND:-omi})")
+
 lk agent dev agent.py &
 pids+=("$!"); names+=("agent worker")
 

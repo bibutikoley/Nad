@@ -18,12 +18,21 @@ token-server = [
     "python-dotenv~=1.1",
 ]
 
-# test_noise_gate.py only. Not in the default deps so `lk agent start` and the
-# Docker image never pull pytest.
+# Tests only. Not in the default deps so `lk agent start` and the Docker image
+# never pull pytest.
 dev = [
     "pytest~=8.4",
     "pytest-asyncio~=1.0",
 ]
+
+# There is deliberately no group for stt_server.py's runtime (omi-med-stt[mlx]).
+# mlx ships wheels only for macos-arm64 and `uv lock` resolves universally, so a
+# group here would make uv.lock unresolvable for the linux token-server image
+# (Dockerfile: `uv sync --locked --only-group token-server`). It would also drag
+# librosa/numba, transformers and a numpy<2.3 ceiling into the venv that
+# `lk agent dev` hot-reloads, and put omi's process-global ConformerBlock
+# monkey-patch in the worker's own process. Same reason mlx-audio isn't here: the
+# pins live in scripts/stt-server.sh, next to the command that installs them.
 
 [tool.uv]
 package = false

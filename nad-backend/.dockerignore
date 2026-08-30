@@ -9,9 +9,13 @@
 __pycache__/
 *.py[cod]
 
-# Not needed by the token-server image.
+# Not needed by the token-server image, which only copies pyproject.toml, uv.lock
+# and token_server.py.
 README.md
 scripts/
 agent.py
+noise_gate.py
+stt_server.py
+test_*.py
 livekit.yaml
 docker-compose.yml
