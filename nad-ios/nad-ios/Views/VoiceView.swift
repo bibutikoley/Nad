@@ -204,66 +204,63 @@ struct VoiceView: View {
 
             TranscriptView(messages: controller.messages)
 
-            VStack(spacing: NadTheme.Space.sm) {
-                ComposerView { text in
-                    await controller.sendText(text)
-                }
-
-                GlassEffectContainer(spacing: NadTheme.Space.lg) {
-                    HStack(spacing: NadTheme.Space.lg) {
-                        // Muted is the state worth seeing at a glance, so it takes the
-                        // tinted-prominent treatment and live mic stays plain glass.
-                        Button {
-                            Task { await controller.toggleMicrophone() }
-                        } label: {
-                            Image(systemName: controller.isMicMuted ? "mic.slash.fill" : "mic.fill")
-                                .font(.system(size: 18, weight: .medium))
-                                .frame(width: 32, height: 32)
-                        }
-                        .buttonStyle(.glass)
-                        .tint(controller.isMicMuted ? NadTheme.Color.fault : NadTheme.Color.bone)
-                        .controlSize(.large)
-                        .accessibilityLabel(controller.isMicMuted ? "Unmute microphone" : "Mute microphone")
-
-                        Spacer()
-
-                        Button {
-                            Task { await controller.end() }
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 18, weight: .medium))
-                                .frame(width: 32, height: 32)
-                        }
-                        .buttonStyle(.glassProminent)
-                        .tint(NadTheme.Color.fault)
-                        .controlSize(.large)
-                        .accessibilityLabel("End session")
+            // Voice is the only way in. There is no text composer: an input field sharing
+            // the bar with the mic asked the user to talk and to type in the same breath,
+            // which read as neither being the real invitation.
+            GlassEffectContainer(spacing: NadTheme.Space.lg) {
+                HStack(spacing: NadTheme.Space.lg) {
+                    // Muted is the state worth seeing at a glance, so it takes the
+                    // tinted-prominent treatment and live mic stays plain glass.
+                    Button {
+                        Task { await controller.toggleMicrophone() }
+                    } label: {
+                        Image(systemName: controller.isMicMuted ? "mic.slash.fill" : "mic.fill")
+                            .font(.system(size: 18, weight: .medium))
+                            .frame(width: 32, height: 32)
                     }
-                    .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
-                    // The stage blob's resting place once a transcript pushes it out of the
-                    // centre. Guarded on `hasTranscript` because the 190pt instance above is
-                    // what's on screen until then, and two views sharing a matchedGeometry
-                    // id at once trips an assertion.
-                    //
-                    // An overlay rather than a third element in the HStack. As a stack child
-                    // its size fed back into the row's sizing pass; an overlay is proposed
-                    // the row's size and can never influence it, so the blob is purely
-                    // drawn, never measured. It also keeps the row exactly as tall as the
-                    // buttons and lets the glow spill past them, which is what we wanted
-                    // anyway. Two frames: the inner one is the drawing surface, the outer
-                    // one the footprint the glow is allowed to overflow.
-                    .overlay {
-                        if hasTranscript {
-                            AudioReactiveBlob(
-                                mic: controller.micLevelMonitor,
-                                agent: controller.agentLevelMonitor,
-                                phase: controller.phase,
-                                isMuted: controller.isMicMuted
-                            )
-                            .frame(width: 124, height: 124)
-                            .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
-                            .allowsHitTesting(false)
-                        }
+                    .buttonStyle(.glass)
+                    .tint(controller.isMicMuted ? NadTheme.Color.fault : NadTheme.Color.bone)
+                    .controlSize(.large)
+                    .accessibilityLabel(controller.isMicMuted ? "Unmute microphone" : "Mute microphone")
+
+                    Spacer()
+
+                    Button {
+                        Task { await controller.end() }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(NadTheme.Color.fault)
+                    .controlSize(.large)
+                    .accessibilityLabel("End session")
+                }
+                .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
+                // The stage blob's resting place once a transcript pushes it out of the
+                // centre. Guarded on `hasTranscript` because the 190pt instance above is
+                // what's on screen until then, and two views sharing a matchedGeometry
+                // id at once trips an assertion.
+                //
+                // An overlay rather than a third element in the HStack. As a stack child
+                // its size fed back into the row's sizing pass; an overlay is proposed
+                // the row's size and can never influence it, so the blob is purely
+                // drawn, never measured. It also keeps the row exactly as tall as the
+                // buttons and lets the glow spill past them, which is what we wanted
+                // anyway. Two frames: the inner one is the drawing surface, the outer
+                // one the footprint the glow is allowed to overflow.
+                .overlay {
+                    if hasTranscript {
+                        AudioReactiveBlob(
+                            mic: controller.micLevelMonitor,
+                            agent: controller.agentLevelMonitor,
+                            phase: controller.phase,
+                            isMuted: controller.isMicMuted
+                        )
+                        .frame(width: 124, height: 124)
+                        .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
+                        .allowsHitTesting(false)
                     }
                 }
             }

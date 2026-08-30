@@ -63,9 +63,9 @@ final class VoiceSessionController: ObservableObject {
     /// Handed out as the monitors themselves rather than republished as `@Published`
     /// properties here. Republishing looked tidier but made every audio buffer touch *this*
     /// object's `objectWillChange`, and `VoiceView` observes this object — so a level moving
-    /// ~100 times a second invalidated the header, the whole transcript and the composer
-    /// along with the blob. The visualizer subscribes to these directly instead, so a level
-    /// change now invalidates nothing but the blob.
+    /// ~100 times a second invalidated the header and the whole transcript along with the
+    /// blob. The visualizer subscribes to these directly instead, so a level change now
+    /// invalidates nothing but the blob.
     ///
     /// Measured as a real but secondary cost: it did not by itself cause the main-thread
     /// stall that prompted this (that was the scroll animation in `TranscriptView`).
@@ -377,12 +377,5 @@ final class VoiceSessionController: ObservableObject {
         @unknown default:
             micPermissionDenied = true
         }
-    }
-
-    // MARK: - Text
-
-    @discardableResult
-    func sendText(_ text: String) async -> SentMessage? {
-        await session.send(text: text)
     }
 }
