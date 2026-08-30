@@ -103,14 +103,29 @@ final class BackendProbe: ObservableObject {
         steps = steps.map { ProbeStep(id: $0.id, title: $0.title, status: .pending) }
     }
 
+    /// How long each step's "running" state is held on screen at minimum. On a LAN
+    /// these checks finish in single-digit milliseconds, so without this the three
+    /// rows resolve in one frame and you never see which step was doing what.
+    /// Presentation only — the latency each step reports is measured by `timed`
+    /// around the actual request, so the numbers stay truthful.
+    private static let minimumVisibleRunning: Duration = .milliseconds(320)
+
     private func step(_ id: String, _ work: () async throws -> String) async {
         setStatus(.running, for: id)
+        let startedAt = ContinuousClock.now
+
+        let outcome: ProbeStepStatus
         do {
-            let detail = try await work()
-            setStatus(.success(detail: detail), for: id)
+            outcome = .success(detail: try await work())
         } catch {
-            setStatus(.failure(message: error.localizedDescription), for: id)
+            outcome = .failure(message: error.localizedDescription)
         }
+
+        let elapsed = ContinuousClock.now - startedAt
+        if elapsed < Self.minimumVisibleRunning {
+            try? await Task.sleep(for: Self.minimumVisibleRunning - elapsed)
+        }
+        setStatus(outcome, for: id)
     }
 
     private func setStatus(_ status: ProbeStepStatus, for id: String) {

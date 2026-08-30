@@ -68,7 +68,13 @@ scripts/speech-server.sh                  # mlx-audio (STT + TTS)
 set -a && source .env && set +a && lk agent dev agent.py   # agent worker
 ```
 
-Warm the speech models once so the first real turn isn't slow:
+The agent warms the speech models itself at the start of every job (`_warm_speech_models()`
+in `agent.py`), before it reports `lk.agent.state = "listening"` — so a client that waits for
+that state gets a genuinely ready agent rather than one that still has to download Kokoro and
+Parakeet on the first turn. A warm-up failure is logged and the job continues, so a cold or
+broken speech server degrades to a slow first turn rather than a dead session.
+
+To warm them by hand anyway (or to check the server directly):
 
 ```bash
 curl -s localhost:8000/v1/audio/speech -H 'content-type: application/json' \

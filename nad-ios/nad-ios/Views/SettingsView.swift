@@ -14,16 +14,17 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
-    @StateObject private var probe: AppSettingsProbeHolder
+    /// Observed directly. Held behind a wrapper object it would compile but never
+    /// redraw — SwiftUI can't see a nested ObservableObject reached through a `let`,
+    /// which is why the test's per-step indicators used to never appear.
+    @StateObject private var probe: BackendProbe
     @Environment(\.dismiss) private var dismiss
     @State private var urlOverrideDraft: String = ""
-    @FocusState private var focusedField: Field?
-
-    private enum Field { case url, room, identity }
+    @FocusState private var urlFieldFocused: Bool
 
     init(settings: AppSettings) {
         self.settings = settings
-        _probe = StateObject(wrappedValue: AppSettingsProbeHolder(settings: settings))
+        _probe = StateObject(wrappedValue: BackendProbe(settings: settings))
     }
 
     var body: some View {
@@ -32,27 +33,47 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: NadTheme.Space.xl) {
                     section("Server") {
                         NadRow(showTopRule: false) {
-                            VStack(alignment: .leading, spacing: NadTheme.Space.xxs) {
+                            VStack(alignment: .leading, spacing: NadTheme.Space.xs) {
                                 NadSectionLabel(text: "Token server URL")
-                                TextField(settings.defaultBaseURL.absoluteString, text: $urlOverrideDraft)
+
+                                // Prefilled with the URL actually in use, so the field
+                                // shows the current value rather than hiding it behind
+                                // a placeholder you have to clear to discover.
+                                TextField(Self.urlHint, text: $urlOverrideDraft)
                                     .font(NadTheme.Typography.data)
                                     .foregroundStyle(NadTheme.Color.bone)
                                     .tint(NadTheme.Color.ember)
                                     .keyboardType(.URL)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
-                                    .focused($focusedField, equals: .url)
+                                    .focused($urlFieldFocused)
                                     .onSubmit { commitURLOverride() }
-                                Text(settings.isUsingOverride ? "Overriding the compiled-in default." : "Using the compiled-in default from BackendConfig.swift.")
-                                    .font(NadTheme.Typography.data)
-                                    .foregroundStyle(NadTheme.Color.mist)
+                                    .padding(.horizontal, NadTheme.Space.sm)
+                                    .padding(.vertical, NadTheme.Space.xs)
+                                    .glassEffect(
+                                        urlFieldFocused
+                                            ? .regular.tint(NadTheme.Color.ember.opacity(0.22))
+                                            : .regular,
+                                        in: RoundedRectangle(cornerRadius: NadTheme.Radius.system * 2, style: .continuous)
+                                    )
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    // graphite is a divider tone — as text on `void`
+                                    // it's effectively invisible.
+                                    Text(Self.urlHint)
+                                        .font(NadTheme.Typography.data)
+                                        .foregroundStyle(NadTheme.Color.mist)
+                                    Text(settings.isUsingOverride ? "Overriding the compiled-in default." : "Using the compiled-in default from BackendConfig.swift.")
+                                        .font(NadTheme.Typography.data)
+                                        .foregroundStyle(NadTheme.Color.mist.opacity(0.7))
+                                }
                             }
                         }
                         if settings.isUsingOverride {
                             NadRow {
-                                Button("Reset to default") {
+                                Button("Reset to default", role: .cancel) {
                                     settings.resetBaseURLOverride()
-                                    urlOverrideDraft = ""
+                                    urlOverrideDraft = settings.defaultBaseURL.absoluteString
                                 }
                                 .font(NadTheme.Typography.label)
                                 .foregroundStyle(NadTheme.Color.ember)
@@ -60,35 +81,13 @@ struct SettingsView: View {
                         }
                     }
 
-                    section("Session") {
-                        NadRow(showTopRule: false) {
-                            labeledField(label: "Room name", placeholder: "auto-generated", text: $settings.roomName, field: .room)
-                        }
-                        NadRow {
-                            labeledField(label: "Participant identity", placeholder: "auto-generated", text: $settings.participantIdentity, field: .identity)
-                        }
-                    }
-
-                    section("Backend auth") {
-                        NadRow(showTopRule: false) {
-                            HStack {
-                                NadSectionLabel(text: "Bearer token")
-                                Spacer()
-                                let configured = !BackendConfig.authToken.hasPrefix("REPLACE_WITH")
-                                Text(configured ? "configured" : "missing")
-                                    .font(NadTheme.Typography.data)
-                                    .foregroundStyle(configured ? NadTheme.Color.ember : NadTheme.Color.fault)
-                            }
-                        }
-                        Text("Set in BackendConfig.swift, not here — it's a build-time secret, not a per-device setting.")
-                            .font(NadTheme.Typography.data)
-                            .foregroundStyle(NadTheme.Color.mist)
-                            .padding(.top, NadTheme.Space.xxs)
-                    }
-
+                    // No bearer-token section: it's a build-time secret in
+                    // BackendConfig.swift with nothing to configure here, and the
+                    // connection test's "Bearer token accepted" step reports whether it
+                    // actually works — which is the only thing worth knowing about it.
                     section("Connection test") {
                         VStack(alignment: .leading, spacing: NadTheme.Space.md) {
-                            ForEach(probe.probe.steps) { step in
+                            ForEach(probe.steps) { step in
                                 ConnectionTestRow(step: step)
                             }
                         }
@@ -96,22 +95,22 @@ struct SettingsView: View {
 
                         Button {
                             commitURLOverride()
-                            Task { await probe.probe.run() }
+                            Task { await probe.run() }
                         } label: {
                             HStack {
-                                if probe.probe.isRunning {
-                                    ProgressView().tint(NadTheme.Color.void)
+                                if probe.isRunning {
+                                    ProgressView().controlSize(.small)
                                 }
-                                Text(probe.probe.isRunning ? "Testing…" : "Run test")
+                                Text(probe.isRunning ? "Testing…" : "Run test")
                                     .font(NadTheme.Typography.label)
                                     .tracking(NadTheme.Typography.labelTracking)
                             }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, NadTheme.Space.sm)
-                            .foregroundStyle(NadTheme.Color.void)
-                            .background(RoundedRectangle(cornerRadius: NadTheme.Radius.system).fill(NadTheme.Color.ember))
                         }
-                        .disabled(probe.probe.isRunning)
+                        .buttonStyle(.glassProminent)
+                        .tint(NadTheme.Color.ember)
+                        .controlSize(.large)
+                        .disabled(probe.isRunning)
                         .padding(.top, NadTheme.Space.lg)
                     }
                 }
@@ -132,7 +131,7 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .onAppear { urlOverrideDraft = settings.baseURLOverrideString }
+        .onAppear { urlOverrideDraft = settings.effectiveBaseURL.absoluteString }
     }
 
     @ViewBuilder
@@ -144,32 +143,20 @@ struct SettingsView: View {
         }
     }
 
-    private func labeledField(label: String, placeholder: String, text: Binding<String>, field: Field) -> some View {
-        VStack(alignment: .leading, spacing: NadTheme.Space.xxs) {
-            NadSectionLabel(text: label)
-            TextField(placeholder, text: text)
-                .font(NadTheme.Typography.data)
-                .foregroundStyle(NadTheme.Color.bone)
-                .tint(NadTheme.Color.ember)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .focused($focusedField, equals: field)
-        }
-    }
+    /// Shown both as the placeholder (if the field is cleared) and as a standing hint,
+    /// since the prefilled value means the placeholder alone would rarely be seen.
+    private static let urlHint = "http://<IP_ADDRESS>:<PORT>"
 
     private func commitURLOverride() {
-        settings.baseURLOverrideString = urlOverrideDraft
-    }
-}
-
-/// StateObject can't be initialized with a value that depends on another
-/// property in the same init in a way SwiftUI likes for @ObservedObject sources,
-/// so BackendProbe lives behind this tiny holder, constructed once in `init`.
-@MainActor
-final class AppSettingsProbeHolder: ObservableObject {
-    let probe: BackendProbe
-    init(settings: AppSettings) {
-        probe = BackendProbe(settings: settings)
+        let trimmed = urlOverrideDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // The field starts prefilled with the URL in use, so submitting it untouched
+        // must not pin an override — otherwise just opening Settings would freeze the
+        // current LAN IP in place, which is the exact thing the override exists to fix.
+        if trimmed.isEmpty || trimmed == settings.defaultBaseURL.absoluteString {
+            settings.resetBaseURLOverride()
+        } else {
+            settings.baseURLOverrideString = trimmed
+        }
     }
 }
 

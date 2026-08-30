@@ -34,6 +34,14 @@ final class AudioLevelMonitor: NSObject, AudioRenderer, @unchecked Sendable {
         level += (rms - level) * coefficient
     }
 
+    /// Drops the level to silence immediately. Renderers stop firing when a session
+    /// ends, so without this the last value before the disconnect would stay published
+    /// and keep driving the visualizer.
+    @MainActor
+    func reset() {
+        level = 0
+    }
+
     private static func rms(of buffer: AVAudioPCMBuffer) -> Float {
         guard let channelData = buffer.floatChannelData else { return 0 }
         let frameCount = Int(buffer.frameLength)

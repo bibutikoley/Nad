@@ -55,13 +55,12 @@ struct NadTokenSource: TokenSourceConfigurable {
     func fetch(_ options: TokenRequestOptions) async throws -> TokenSourceResponse {
         // AppSettings is @MainActor; TokenSourceConfigurable.fetch is called from a
         // nonisolated context, so every read of `settings` is gathered in one hop.
-        let (baseURL, room, identity) = await MainActor.run {
-            (
-                settings.effectiveBaseURL,
-                options.roomName ?? settings.effectiveRoomName,
-                options.participantIdentity ?? settings.effectiveParticipantIdentity
-            )
+        let (baseURL, room) = await MainActor.run {
+            (settings.effectiveBaseURL, options.roomName ?? settings.effectiveRoomName)
         }
+        // Left to the token server unless a caller pins one; there's no per-device
+        // identity setting any more.
+        let identity = options.participantIdentity
 
         var components = URLComponents(url: baseURL.appendingPathComponent("token"), resolvingAgainstBaseURL: false)
         var query: [URLQueryItem] = []

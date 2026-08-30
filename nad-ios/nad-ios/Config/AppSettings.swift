@@ -17,13 +17,9 @@ import SwiftUI
 final class AppSettings: ObservableObject {
     private enum Key {
         static let baseURLOverride = "nad.baseURLOverride"
-        static let roomName = "nad.roomName"
-        static let participantIdentity = "nad.participantIdentity"
     }
 
     @AppStorage(Key.baseURLOverride) var baseURLOverrideString: String = ""
-    @AppStorage(Key.roomName) var roomName: String = ""
-    @AppStorage(Key.participantIdentity) var participantIdentity: String = ""
 
     /// The compiled-in default, shown in Settings for comparison against any override.
     var defaultBaseURL: URL { BackendConfig.baseURL }
@@ -41,16 +37,18 @@ final class AppSettings: ObservableObject {
         !baseURLOverrideString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// nil lets the token server generate one (see token_server.py: `nad-<hex8>`).
-    var effectiveRoomName: String? {
-        let trimmed = roomName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
+    /// Set for exactly one connection when resuming a saved conversation. Resuming has
+    /// to know the room name *before* asking for a token, because the transcript is
+    /// parked under that name for the agent to collect — so for that one connect the
+    /// client picks the name instead of the token server. Not persisted.
+    @Published var oneShotRoomName: String?
 
-    /// nil lets the token server generate one (`user-<hex8>`).
-    var effectiveParticipantIdentity: String? {
-        let trimmed = participantIdentity.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+    /// Only ever set for a resume. Otherwise nil, which lets the token server generate
+    /// both the room (`nad-<hex8>`) and the participant identity (`user-<hex8>`) — see
+    /// token_server.py. There's no reason to pin either by hand.
+    var effectiveRoomName: String? {
+        guard let oneShotRoomName, !oneShotRoomName.isEmpty else { return nil }
+        return oneShotRoomName
     }
 
     func resetBaseURLOverride() {

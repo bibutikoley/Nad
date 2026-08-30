@@ -2,9 +2,11 @@
 //  VoiceView.swift
 //  nad-ios
 //
-//  The main screen: idle (not yet connected) and active (in a session) states,
-//  no stock List/Form chrome anywhere on it. `Session` is @MainActor +
-//  ObservableObject, so `controller.session` is observed directly.
+//  The main screen: idle (including connecting / warming up) and active (the agent is
+//  genuinely ready) states, no stock List/Form chrome anywhere on it.
+//
+//  Everything state-ish comes from `controller`. Reading `controller.session` here
+//  would compile but not observe — see the note at the top of VoiceSessionController.
 //
 
 import LiveKit
@@ -16,12 +18,17 @@ struct VoiceView: View {
     /// separately (rather than constructed here) so Settings edits and the
     /// controller's token source share one instance.
     let settings: AppSettings
+    @ObservedObject var store: ConversationStore
 
     @State private var showSettings = false
+    @State private var showHistory = false
     @State private var previousLiveState: AgentState?
     @State private var rippleTrigger = 0
+    @Namespace private var blobSpace
 
-    private var session: Session { controller.session }
+    /// Once there's something to read, the blob gives up the stage and collapses into
+    /// the header beside the status pill.
+    private var hasTranscript: Bool { !controller.messages.isEmpty }
 
     var body: some View {
         ZStack {
@@ -30,7 +37,7 @@ struct VoiceView: View {
             VStack(spacing: 0) {
                 header
 
-                if session.isConnected {
+                if controller.phase.isReady {
                     activeSession
                 } else {
                     idle
@@ -40,14 +47,28 @@ struct VoiceView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(settings: settings)
         }
-        .onChange(of: session.agent.agentState) { _, newValue in
-            guard isLive(newValue), newValue != previousLiveState else {
-                previousLiveState = isLive(newValue) ? newValue : nil
+        .sheet(isPresented: $showHistory) {
+            HistoryView(store: store) { conversation in
+                Task {
+                    // Resuming replaces whatever is on screen, so end the current
+                    // session first rather than connecting on top of it.
+                    if controller.phase != .idle { await controller.end() }
+                    await controller.start(resuming: conversation)
+                }
+            }
+        }
+        .onChange(of: controller.phase) { _, newValue in
+            guard case let .ready(state) = newValue else {
+                // Don't carry a live state across sessions: it would swallow the first
+                // ripple of the next one.
+                previousLiveState = nil
                 return
             }
-            previousLiveState = newValue
+            guard state != previousLiveState else { return }
+            previousLiveState = state
             rippleTrigger += 1
         }
+        .animation(NadTheme.Motion.state, value: hasTranscript)
         .preferredColorScheme(.dark)
     }
 
@@ -55,14 +76,29 @@ struct VoiceView: View {
 
     private var header: some View {
         HStack {
-            Text("NAD")
-                .font(NadTheme.Typography.label)
-                .tracking(NadTheme.Typography.labelTracking * 2)
-                .foregroundStyle(NadTheme.Color.mist)
+            Button {
+                showHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(NadTheme.Color.mist)
+            }
+            .buttonStyle(.glass)
+            .accessibilityLabel("Conversation history")
 
             Spacer()
 
-            AgentStatePill(agentState: session.agent.agentState, isPending: session.agent.isPending)
+            HStack(spacing: NadTheme.Space.xs) {
+                if controller.phase.isReady, hasTranscript {
+                    AudioReactiveBlob(controller: controller, rippleTrigger: rippleTrigger)
+                        .frame(width: 32, height: 32)
+                        .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
+                }
+
+                if controller.phase != .idle {
+                    AgentStatePill(phase: controller.phase)
+                }
+            }
 
             Spacer()
 
@@ -73,6 +109,8 @@ struct VoiceView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(NadTheme.Color.mist)
             }
+            .buttonStyle(.glass)
+            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, NadTheme.Space.md)
         .padding(.top, NadTheme.Space.sm)
@@ -86,40 +124,85 @@ struct VoiceView: View {
             Spacer()
 
             VoiceVisualizer(level: 0.08, rippleTrigger: 0)
-                .frame(width: 200, height: 200)
+                .frame(width: 240, height: 240)
+                .opacity(isBusy ? 0.45 : 1)
 
             VStack(spacing: NadTheme.Space.xs) {
                 Text("Nad")
                     .font(NadTheme.Typography.display)
                     .foregroundStyle(NadTheme.Color.bone)
-                Text("Your self-hosted voice agent, on your network.")
+                Text(subtitle)
                     .font(NadTheme.Typography.body)
                     .foregroundStyle(NadTheme.Color.mist)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, NadTheme.Space.lg)
             }
 
             if controller.micPermissionDenied {
                 permissionBanner
             }
 
-            if let error = session.error {
-                errorBanner(error.localizedDescription) { session.dismissError() }
+            if case let .failed(message) = controller.phase {
+                errorBanner(message) { controller.dismissError() }
             }
 
             Spacer()
 
-            Button {
-                Task { await controller.start() }
-            } label: {
-                Text("Connect")
+            connectButton
+                .padding(.horizontal, NadTheme.Space.xl)
+                .padding(.bottom, NadTheme.Space.xl)
+        }
+    }
+
+    private var subtitle: String {
+        switch controller.phase {
+        case .connecting:
+            "Reaching the agent on your network…"
+        case .warmingUp:
+            "Loading speech models — the first run downloads them, so this can take a while."
+        default:
+            "Your self-hosted voice agent, on your network."
+        }
+    }
+
+    /// Connecting and warming up both mean "not ready" — the button must not invite a
+    /// second tap, and the mic stays closed throughout.
+    private var isBusy: Bool {
+        switch controller.phase {
+        case .connecting, .warmingUp: true
+        default: false
+        }
+    }
+
+    private var connectButton: some View {
+        Button {
+            Task { await controller.start() }
+        } label: {
+            HStack(spacing: NadTheme.Space.xs) {
+                if isBusy {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(NadTheme.Color.mist)
+                }
+                Text(connectLabel)
                     .font(NadTheme.Typography.bodyEmphasis)
-                    .foregroundStyle(NadTheme.Color.void)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, NadTheme.Space.md)
-                    .background(RoundedRectangle(cornerRadius: NadTheme.Radius.conversational, style: .continuous).fill(NadTheme.Color.ember))
             }
-            .padding(.horizontal, NadTheme.Space.xl)
-            .padding(.bottom, NadTheme.Space.xl)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, NadTheme.Space.xs)
+        }
+        .buttonStyle(.glassProminent)
+        .tint(isBusy ? NadTheme.Color.slate : NadTheme.Color.ember)
+        .controlSize(.large)
+        .disabled(isBusy)
+        .animation(NadTheme.Motion.state, value: isBusy)
+    }
+
+    private var connectLabel: String {
+        switch controller.phase {
+        case .connecting: "Connecting…"
+        case .warmingUp: "Warming up…"
+        case .failed: "Try again"
+        default: "Connect"
         }
     }
 
@@ -127,59 +210,59 @@ struct VoiceView: View {
 
     private var activeSession: some View {
         VStack(spacing: 0) {
-            VoiceVisualizer(level: visualizerLevel, rippleTrigger: rippleTrigger)
-                .frame(width: 160, height: 160)
-                .padding(.top, NadTheme.Space.lg)
-                .padding(.bottom, NadTheme.Space.md)
-
-            if let agentError = session.agent.error {
-                errorBanner(agentErrorMessage(agentError)) { }
-                    .padding(.horizontal, NadTheme.Space.md)
+            if !hasTranscript {
+                AudioReactiveBlob(controller: controller, rippleTrigger: rippleTrigger)
+                    .frame(width: 190, height: 190)
+                    .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
+                    .padding(.top, NadTheme.Space.lg)
+                    .padding(.bottom, NadTheme.Space.md)
             }
 
-            TranscriptView(messages: session.messages)
+            TranscriptView(messages: controller.messages)
 
             VStack(spacing: NadTheme.Space.sm) {
                 ComposerView { text in
                     await controller.sendText(text)
                 }
 
-                HStack(spacing: NadTheme.Space.lg) {
-                    roundButton(
-                        systemImage: controller.isMicMuted ? "mic.slash.fill" : "mic.fill",
-                        tint: controller.isMicMuted ? NadTheme.Color.fault : NadTheme.Color.bone
-                    ) {
-                        Task { await controller.toggleMicrophone() }
-                    }
+                GlassEffectContainer(spacing: NadTheme.Space.lg) {
+                    HStack(spacing: NadTheme.Space.lg) {
+                        // Muted is the state worth seeing at a glance, so it takes the
+                        // tinted-prominent treatment and live mic stays plain glass.
+                        Button {
+                            Task { await controller.toggleMicrophone() }
+                        } label: {
+                            Image(systemName: controller.isMicMuted ? "mic.slash.fill" : "mic.fill")
+                                .font(.system(size: 18, weight: .medium))
+                                .frame(width: 32, height: 32)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(controller.isMicMuted ? NadTheme.Color.fault : NadTheme.Color.bone)
+                        .controlSize(.large)
+                        .accessibilityLabel(controller.isMicMuted ? "Unmute microphone" : "Mute microphone")
 
-                    Spacer()
+                        Spacer()
 
-                    roundButton(systemImage: "xmark", tint: NadTheme.Color.void, fill: NadTheme.Color.fault) {
-                        Task { await controller.end() }
+                        Button {
+                            Task { await controller.end() }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .medium))
+                                .frame(width: 32, height: 32)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .tint(NadTheme.Color.fault)
+                        .controlSize(.large)
+                        .accessibilityLabel("End session")
                     }
+                    .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
                 }
             }
             .padding(NadTheme.Space.md)
         }
     }
 
-    private var visualizerLevel: Float {
-        session.agent.agentState == .speaking ? controller.agentLevel : controller.micLevel
-    }
-
-    private func isLive(_ state: AgentState?) -> Bool {
-        switch state {
-        case .listening, .thinking, .speaking: true
-        default: false
-        }
-    }
-
-    private func agentErrorMessage(_ error: Agent.Error) -> String {
-        switch error {
-        case .timeout: "No agent joined. Is scripts/dev.sh running on the backend Mac?"
-        case .left: "The agent left the room unexpectedly."
-        }
-    }
+    private static let blobID = "nad.blob"
 
     // MARK: - Shared bits
 
@@ -203,24 +286,47 @@ struct VoiceView: View {
                 .foregroundStyle(NadTheme.Color.bone)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(NadTheme.Color.mist)
+            }
         }
         .padding(NadTheme.Space.sm)
-        .background(RoundedRectangle(cornerRadius: NadTheme.Radius.system).fill(NadTheme.Color.fault.opacity(0.12)))
+        .glassEffect(
+            .regular.tint(NadTheme.Color.fault.opacity(0.28)),
+            in: RoundedRectangle(cornerRadius: NadTheme.Radius.conversational, style: .continuous)
+        )
         .padding(.horizontal, NadTheme.Space.xl)
     }
 
-    private func roundButton(systemImage: String, tint: SwiftUI.Color, fill: SwiftUI.Color = NadTheme.Color.ink, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(tint)
-                .frame(width: 52, height: 52)
-                .background(Circle().fill(fill))
+}
+
+/// Owns the audio-level subscription so per-buffer level updates invalidate only the
+/// blob. Reading the levels straight from `VoiceView` would re-render the header,
+/// transcript and composer at audio-buffer rate.
+private struct AudioReactiveBlob: View {
+    @ObservedObject var controller: VoiceSessionController
+    var rippleTrigger: Int
+
+    private var level: Float {
+        if case .ready(.speaking) = controller.phase {
+            return controller.agentLevel
         }
-        .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
+        return controller.isMicMuted ? 0 : controller.micLevel
+    }
+
+    var body: some View {
+        VoiceVisualizer(level: level, rippleTrigger: rippleTrigger)
     }
 }
 
 #Preview {
-    VoiceView(controller: VoiceSessionController(settings: AppSettings()), settings: AppSettings())
+    let settings = AppSettings()
+    let store = ConversationStore(filename: "preview.json")
+    return VoiceView(
+        controller: VoiceSessionController(settings: settings, store: store),
+        settings: settings,
+        store: store
+    )
 }
