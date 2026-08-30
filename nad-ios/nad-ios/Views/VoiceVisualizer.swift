@@ -7,8 +7,9 @@
 //  of EQ bars. The form itself is the whole idea: it breathes while idle and pulses
 //  with whoever is speaking, so the voice is legible without any chrome around it.
 //
-//  Every dimension is derived from the frame it's given, so the same view is both the
-//  large stage blob and the compact one that sits beside the session buttons.
+//  Every dimension is derived from the frame it's given, so one instance is the large
+//  landing blob, the session stage blob, and the pill-sized one docked in the header —
+//  it is literally the same view travelling between them.
 //
 
 import SwiftUI

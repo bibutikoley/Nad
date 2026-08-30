@@ -24,8 +24,8 @@ struct VoiceView: View {
     @State private var showHistory = false
     @Namespace private var blobSpace
 
-    /// Once there's something to read, the blob gives up the stage and shrinks into the
-    /// session controls at the bottom, between the mic and end buttons.
+    /// Once there's something to read, the blob gives up the stage and settles into the
+    /// header, beside the pill that names the same state in words.
     private var hasTranscript: Bool { !controller.messages.isEmpty }
 
     var body: some View {
@@ -41,6 +41,26 @@ struct VoiceView: View {
                     idle
                 }
             }
+
+            // The one and only blob. Every position in this file reserves space with a
+            // `blobAnchor` and draws nothing; this instance does all the drawing, taking its
+            // frame from whichever anchor is currently the source.
+            //
+            // One instance rather than one per position: it genuinely travels between the
+            // three places instead of crossfading between look-alikes, there is no way for two
+            // views to hold the shared matchedGeometry id at once, and the audio-level
+            // subscriptions inside it are made once for the life of the screen rather than torn
+            // down and rebuilt on every transition.
+            AudioReactiveBlob(
+                mic: controller.micLevelMonitor,
+                agent: controller.agentLevelMonitor,
+                phase: controller.phase,
+                isMuted: controller.isMicMuted
+            )
+            .matchedGeometryEffect(id: Self.blobID, in: blobSpace, isSource: false)
+            .opacity(isBusy ? 0.45 : 1)
+            // It floats over the header buttons on its way past; it must never eat their taps.
+            .allowsHitTesting(false)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(settings: settings)
@@ -55,7 +75,11 @@ struct VoiceView: View {
                 }
             }
         }
+        // The blob's two journeys: landing -> stage when the session goes live, stage -> header
+        // when the first line of transcript arrives. Both have to be animated here, on the
+        // common ancestor of the anchors involved, or the blob teleports.
         .animation(NadTheme.Motion.state, value: hasTranscript)
+        .animation(NadTheme.Motion.state, value: controller.phase.isReady)
         .preferredColorScheme(.dark)
     }
 
@@ -75,8 +99,16 @@ struct VoiceView: View {
 
             Spacer()
 
-            if controller.phase != .idle {
-                AgentStatePill(phase: controller.phase, isMuted: controller.isMicMuted)
+            // Blob first, then pill: the signal, then the word for it. The blob only docks here
+            // once there's a transcript to sit above — before that it has the stage below.
+            HStack(spacing: NadTheme.Space.xs) {
+                if controller.phase.isReady, hasTranscript {
+                    blobAnchor(geometry: 50, footprint: 26)
+                }
+
+                if controller.phase != .idle {
+                    AgentStatePill(phase: controller.phase, isMuted: controller.isMicMuted)
+                }
             }
 
             Spacer()
@@ -102,9 +134,7 @@ struct VoiceView: View {
         VStack(spacing: NadTheme.Space.xl) {
             Spacer()
 
-            VoiceVisualizer(level: 0.08)
-                .frame(width: 240, height: 240)
-                .opacity(isBusy ? 0.45 : 1)
+            blobAnchor(geometry: 240)
 
             VStack(spacing: NadTheme.Space.xs) {
                 Text("Nad")
@@ -190,14 +220,7 @@ struct VoiceView: View {
     private var activeSession: some View {
         VStack(spacing: 0) {
             if !hasTranscript {
-                AudioReactiveBlob(
-                    mic: controller.micLevelMonitor,
-                    agent: controller.agentLevelMonitor,
-                    phase: controller.phase,
-                    isMuted: controller.isMicMuted
-                )
-                    .frame(width: 190, height: 190)
-                    .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
+                blobAnchor(geometry: 190)
                     .padding(.top, NadTheme.Space.lg)
                     .padding(.bottom, NadTheme.Space.md)
             }
@@ -238,37 +261,33 @@ struct VoiceView: View {
                     .accessibilityLabel("End session")
                 }
                 .animation(NadTheme.Motion.reaction, value: controller.isMicMuted)
-                // The stage blob's resting place once a transcript pushes it out of the
-                // centre. Guarded on `hasTranscript` because the 190pt instance above is
-                // what's on screen until then, and two views sharing a matchedGeometry
-                // id at once trips an assertion.
-                //
-                // An overlay rather than a third element in the HStack. As a stack child
-                // its size fed back into the row's sizing pass; an overlay is proposed
-                // the row's size and can never influence it, so the blob is purely
-                // drawn, never measured. It also keeps the row exactly as tall as the
-                // buttons and lets the glow spill past them, which is what we wanted
-                // anyway. Two frames: the inner one is the drawing surface, the outer
-                // one the footprint the glow is allowed to overflow.
-                .overlay {
-                    if hasTranscript {
-                        AudioReactiveBlob(
-                            mic: controller.micLevelMonitor,
-                            agent: controller.agentLevelMonitor,
-                            phase: controller.phase,
-                            isMuted: controller.isMicMuted
-                        )
-                        .frame(width: 124, height: 124)
-                        .matchedGeometryEffect(id: Self.blobID, in: blobSpace)
-                        .allowsHitTesting(false)
-                    }
-                }
             }
             .padding(NadTheme.Space.md)
         }
     }
 
+    // MARK: - Blob placement
+
     private static let blobID = "nad.blob"
+
+    /// Reserves the blob's place without drawing anything — the drawing is done once, by the
+    /// instance in `body`.
+    ///
+    /// `geometry` is the frame the blob takes on while this anchor is the live one.
+    /// `footprint` is what the surrounding layout actually reserves, and defaults to the same
+    /// thing. They differ only in the header, where a 50pt blob has to sit in a row no taller
+    /// than its buttons: the inner frame is the drawing surface the geometry effect measures,
+    /// the outer one the smaller footprint the glow is allowed to overflow.
+    ///
+    /// Exactly one anchor may be a source at any moment — two holding the id at once trips an
+    /// assertion, and none at all collapses the blob to nothing — so the conditions guarding
+    /// the three call sites have to stay a strict partition.
+    private func blobAnchor(geometry: CGFloat, footprint: CGFloat? = nil) -> some View {
+        Color.clear
+            .frame(width: geometry, height: geometry)
+            .matchedGeometryEffect(id: Self.blobID, in: blobSpace, isSource: true)
+            .frame(width: footprint ?? geometry, height: footprint ?? geometry)
+    }
 
     // MARK: - Shared bits
 
@@ -324,11 +343,17 @@ private struct AudioReactiveBlob: View {
     var isMuted: Bool
     var radiusRatio: CGFloat = 0.24
 
+    /// What the blob shows when there is no session to react to. The landing page used to
+    /// hardcode this on a visualizer of its own; now that one instance covers every state, the
+    /// resting breath lives here. Not zero: an entirely still blob reads as broken.
+    private static let resting: Float = 0.08
+
     private var level: Float {
-        if case .ready(.speaking) = phase {
-            return agent.level
+        switch phase {
+        case .ready(.speaking): agent.level
+        case .ready: isMuted ? 0 : mic.level
+        default: Self.resting
         }
-        return isMuted ? 0 : mic.level
     }
 
     var body: some View {
