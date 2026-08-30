@@ -4,14 +4,19 @@ Self-hosted real-time voice agent on LiveKit. Everything runs on your own machin
 the only external call is the LLM endpoint you configure.
 
 ```
-iOS app ──WebRTC──▶ LiveKit server (Docker, :7880)
-                          │
-                          ▼
-                    agent.py (uv)  ── VAD + end-of-turn model run in-process
-                     │        │
-        STT ◀────────┘        └────────▶ TTS          LLM ──▶ your OpenAI-compatible endpoint
-        mlx-audio server (native, :8000) — Parakeet/Whisper + Kokoro on MLX
+iOS app ──① token──▶ token server (Docker, :8787)
+   │
+   └──② WebRTC (token)──▶ LiveKit server (Docker, :7880)
+                                 │
+                                 ▼
+                           agent.py (uv)  ── VAD + end-of-turn model run in-process
+                            │        │
+               STT ◀────────┘        └────────▶ TTS          LLM ──▶ your OpenAI-compatible endpoint
+               mlx-audio server (native, :8000) — Parakeet/Whisper + Kokoro on MLX
 ```
+
+`docker compose up` runs the token server + LiveKit together — the only two of the above the
+iOS client ever talks to directly. `scripts/dev.sh` runs agent.py + mlx-audio together.
 
 ## Processes
 
@@ -108,6 +113,36 @@ blocks cleartext `ws://`/`http://` to non-localhost hosts by default. Once the a
 first request to this backend, add an `NSAppTransportSecurity` → `NSAllowsLocalNetworking`
 exception to `nad-ios/nad-ios/Info.plist` (plus the `NSLocalNetworkUsageDescription` string
 iOS 14+ prompts the user with) — or move both ends to TLS — or requests will silently fail.
+
+## Exposing beyond the LAN (Tailscale Funnel)
+
+Not set up yet — for later, when the token server and LiveKit need to be reachable from
+outside the LAN over [Tailscale Funnel](https://tailscale.com/kb/1223/funnel). Prerequisite:
+Funnel enabled for the tailnet in the Tailscale admin console, and `tailscale up` already
+running on this Mac. Run these once `docker compose up` (and `scripts/dev.sh`) are already up:
+
+```bash
+tailscale funnel --bg localhost:8787              # token server → public :443 (https)
+tailscale funnel --bg --https=8443 localhost:7880 # LiveKit signalling → public :8443 (wss)
+```
+
+Funnel only publishes on three fixed ports (443, 8443, 10000 — no arbitrary port), which is
+why these land on two different ones. Check what's live, or tear one down:
+
+```bash
+tailscale funnel status
+tailscale funnel 443 off
+tailscale funnel --https=8443 off
+```
+
+**This alone does not carry audio.** Funnel is TLS/TCP-only and cannot forward UDP at all, so
+the WebRTC media range (`50000-50100/udp`) can't go through it — token requests and LiveKit's
+signalling become reachable from anywhere, but no audio will flow. The actual fix for that,
+when this gets picked up for real: enroll the client device on the same tailnet as this Mac
+and point `LIVEKIT_URL`/`LIVEKIT_NODE_IP` at the Mac's tailscale IP instead of Funnel — real
+UDP over Tailscale's own tunnel, not a TCP relay. (Since Funnel does terminate real TLS, a
+`wss://`/`https://` `LIVEKIT_URL` here would also sidestep the ATS cleartext exception above —
+worth remembering if the tailnet route isn't the one taken.)
 
 ## Swapping models
 
