@@ -2,10 +2,11 @@
 
 The pipeline in `agent.py` uses a batch STT, so `AgentSession` wraps it in a
 `stt.StreamAdapter`: Silero VAD cuts one WAV per speech segment and each one is POSTed to
-mlx-audio. That makes the VAD the *sole* gatekeeper for what Parakeet ever sees, and Silero
-fires on almost any energy transient. Parakeet is a transducer, so it dutifully emits text
-for whatever it is handed -- and a non-empty transcript is all the end-of-turn model needs
-to commit a turn. Net effect: a fan, a keyboard or a TV makes the agent talk to the room.
+mlx-audio. That makes the VAD the *sole* gatekeeper for what the STT ever sees, and Silero
+fires on almost any energy transient. No STT returns nothing for that audio: a transducer
+emits a spurious fragment, and Whisper -- trained on subtitles -- hallucinates a whole
+fluent sentence. Either way a non-empty transcript is all the end-of-turn model needs to
+commit a turn. Net effect: a fan, a keyboard or a TV makes the agent talk to the room.
 
 This module inserts a gate between the two. `NoiseGatedSTT` wraps the real STT, measures
 each VAD segment, and returns an empty transcript for segments that look like ambient noise
@@ -30,7 +31,9 @@ from __future__ import annotations
 import logging
 import math
 import os
+import wave
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -45,6 +48,14 @@ logger = logging.getLogger("nad")
 # Verbose per-segment logging for tuning the constants below against a real room.
 # See README.md -> "Turn-taking & barge-in".
 AUDIO_DEBUG = os.environ.get("NAD_AUDIO_DEBUG", "").lower() not in ("", "0", "false", "no")
+
+# Directory to write each accepted segment to as a .wav, or "" to write none.
+#
+# For diagnosing *transcription* quality rather than gate behaviour: these are the exact
+# bytes the STT receives, so a bad transcript can be replayed against another model
+# offline instead of guessed at. Off by default -- this records the user, so it is a
+# deliberate opt-in and the files should be deleted afterwards.
+AUDIO_DUMP_DIR = os.environ.get("NAD_AUDIO_DUMP", "")
 
 # --- Gate constants -------------------------------------------------------------------
 # Biased toward responsiveness: these reject clear ambient noise and little else. Raise
@@ -319,10 +330,31 @@ class NoiseGatedSTT(stt.STT):
         event = await self._wrapped.recognize(
             buffer=buffer, language=language, conn_options=conn_options
         )
-        self._log(
-            verdict, stats, transcript=event.alternatives[0].text if event.alternatives else ""
-        )
+        transcript = event.alternatives[0].text if event.alternatives else ""
+        self._log(verdict, stats, transcript=transcript)
+        self._dump(buffer, transcript)
         return event
+
+    def _dump(self, buffer: utils.AudioBuffer, transcript: str) -> None:
+        """Write one accepted segment to disk alongside what the STT made of it.
+
+        Best-effort: a diagnostic must never be able to break a live call.
+        """
+        if not AUDIO_DUMP_DIR:
+            return
+        try:
+            directory = Path(AUDIO_DUMP_DIR)
+            directory.mkdir(parents=True, exist_ok=True)
+            frame = utils.merge_frames(buffer) if isinstance(buffer, list) else buffer
+            path = directory / f"seg{self._segment:04d}.wav"
+            with wave.open(str(path), "wb") as out:
+                out.setnchannels(frame.num_channels)
+                out.setsampwidth(2)  # int16, as delivered
+                out.setframerate(frame.sample_rate)
+                out.writeframes(frame.data)
+            path.with_suffix(".txt").write_text(transcript)
+        except Exception:
+            logger.warning("could not dump segment audio", exc_info=True)
 
     def _log(self, verdict: GateVerdict, stats: SegmentStats | None, *, transcript: str) -> None:
         """One line per VAD segment. Pair it with the accepted-transcript logging in

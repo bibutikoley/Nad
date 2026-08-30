@@ -309,7 +309,21 @@ def test_wrapper_forwards_identity_and_capabilities():
 # --- transcript gate ------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("transcript", ["", "   ", ".", "?", "...", "uh", "Um.", "  Hmm  "])
+@pytest.mark.parametrize(
+    "transcript",
+    [
+        "", "   ", ".", "?", "...", "uh", "Um.", "  Hmm  ",
+        # Whisper emits a bare "you" on silence more than anything else.
+        "you", "You.",
+        # Subtitle boilerplate: Whisper's decoder was trained on caption data and falls
+        # back to it when there is nothing to transcribe.
+        "Thanks for watching!",
+        "thank you for watching",
+        "Please subscribe to my channel.",
+        "Subtitles by the Amara.org community",
+        "Bye bye.",
+    ],
+)
 def test_noise_transcripts_are_rejected(transcript):
     assert _looks_like_noise(transcript)
 
@@ -323,13 +337,21 @@ def test_noise_transcripts_are_rejected(transcript):
         "Wait!",
         "okay",
         "hey",
-        # Parakeet is a transducer, not an autoregressive decoder: it emits blanks on
-        # non-speech rather than inventing Whisper's "Thank you." So "thanks" must stay a
-        # legitimate thing to say to Nad.
+        # Ambiguous under Whisper -- both a hallucination and an ordinary thing to say --
+        # so deliberately allowed. Dropping a real one is worse than answering a spurious
+        # one, which costs a single wasted reply.
         "thanks",
+        "thank you",
         "what time is it",
         "um, what were we talking about",
         "hmm let me think",
+        # Boilerplate is matched against the whole transcript, never as a substring, so a
+        # real turn that happens to contain one of those phrases survives.
+        "thanks for watching the demo, what should we do next",
+        "can you subtitle that for me",
+        # "you" is noise alone, but not as part of a real sentence.
+        "you were saying",
+        "how are you",
     ],
 )
 def test_real_speech_survives(transcript):

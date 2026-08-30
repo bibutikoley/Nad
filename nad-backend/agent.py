@@ -72,12 +72,43 @@ ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_A
 # reads the transcript, and so catches noise that was loud enough to pass but decoded to
 # nothing meaningful.
 #
-# The list is Parakeet-specific. Whisper's notorious noise hallucinations ("Thank you.",
-# "Subtitles by ...") come from its autoregressive decoder inventing fluent sentences;
-# Parakeet is a transducer and fails differently, emitting short spurious fragments instead.
-# A Whisper blocklist copied from elsewhere would be the wrong list here -- and README.md
-# documents Whisper as the multilingual alternative, so revisit this if STT_MODEL changes.
-_NOISE_TOKENS = frozenset({"uh", "um", "mm", "hmm", "mhm", "hm", "ah", "eh", "huh"})
+# These lists are Whisper-specific, and would be the wrong lists for a transducer. Whisper's
+# decoder is autoregressive and was trained on subtitle data, so on near-silence it does not
+# emit a blank -- it invents a *fluent sentence*, drawn from the boilerplate that pads
+# subtitle corpora ("Thank you.", "Subtitles by ...", "Please subscribe"). A transducer like
+# Parakeet fails the opposite way, emitting short spurious fragments. Revisit both lists if
+# STT_MODEL changes family; README.md -> "Swapping models" says which is which.
+_NOISE_TOKENS = frozenset(
+    {
+        "uh", "um", "mm", "hmm", "mhm", "hm", "ah", "eh", "huh",
+        # Whisper's single most common output on silence.
+        "you",
+    }
+)
+
+# Matched against the whole normalised transcript, never as a substring: a turn that merely
+# contains one of these is a real turn ("thanks for watching the demo, what's next" must
+# survive), whereas a turn that is *only* this is subtitle boilerplate.
+#
+# Bare "thanks" / "thank you" are deliberately absent. They are genuinely ambiguous -- both
+# a hallucination and an ordinary thing to say to a voice assistant -- and dropping a real
+# one is worse than passing a spurious one, which costs a single wasted reply.
+_NOISE_PHRASES = frozenset(
+    {
+        "thanks for watching",
+        "thank you for watching",
+        "thanks for watching this video",
+        "please subscribe",
+        "please subscribe to my channel",
+        "like and subscribe",
+        "subtitles by the amara org community",
+        "subtitles by the amaraorg community",
+        "amara org",
+        "subs by",
+        "transcription by castingwords",
+        "bye bye",
+    }
+)
 
 # Checked first, so a real one-word reply can never be caught by the list above. Short
 # answers are exactly what an over-eager filter breaks, and they matter in a voice UI.
@@ -101,12 +132,17 @@ def _looks_like_noise(transcript: str) -> bool:
         return True
 
     if len(words) > 1:
-        # Anything with real structure gets through: rejecting multi-word turns risks
-        # swallowing a genuine short question.
-        return False
+        # Multi-word turns are rejected only when the *entire* transcript is known
+        # subtitle boilerplate. Whisper hallucinates fluent sentences, so unlike a
+        # transducer the word count alone says nothing about whether anything was said.
+        #
+        # The allow-list is not consulted here: it protects one-word answers, and
+        # applying it to the first word of a longer turn would rescue every phrase that
+        # merely opens with one ("thanks for watching").
+        return " ".join(words) in _NOISE_PHRASES
 
-    word = words[0]
-    return word not in _ALWAYS_ALLOWED and word in _NOISE_TOKENS
+    # Checked first, so a real one-word reply can never be caught by the list below.
+    return words[0] not in _ALWAYS_ALLOWED and words[0] in _NOISE_TOKENS
 
 
 class NadAssistant(Agent):
@@ -150,13 +186,13 @@ class NadAssistant(Agent):
 
 server = AgentServer()
 
-# Long enough to cover a first-ever HuggingFace download of Kokoro/Parakeet, which is
-# the worst case this warm-up exists to absorb.
+# Long enough to cover a first-ever HuggingFace download of Kokoro and the STT model,
+# which is the worst case this warm-up exists to absorb (~2.9 GB for Whisper large-v3).
 _WARMUP_TIMEOUT = aiohttp.ClientTimeout(total=600)
 
 
 async def _warm_speech_models() -> None:
-    """Force mlx-audio to load Kokoro and Parakeet before we claim to be listening.
+    """Force mlx-audio to load both speech models before we claim to be listening.
 
     mlx-audio loads each model on its first real request, so without this the first
     user turn pays the download+load cost -- and the client has already been told the
@@ -303,9 +339,11 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         # The plugin treats non-realtime models as batch STT; the session wraps it
         # with a VAD StreamAdapter automatically.
         #
-        # Wrapped in the noise gate so ambient room noise never reaches Parakeet: Silero
-        # fires on any energy transient, and a transducer will happily emit text for a fan.
-        # The gate holds per-room state, so it is built here (per job) and never shared.
+        # Wrapped in the noise gate so ambient room noise never reaches the model: Silero
+        # fires on any energy transient, and Whisper does not return a blank for one -- it
+        # hallucinates a sentence, which is worse than the spurious fragment a transducer
+        # would emit. The gate holds per-room state, so it is built here (per job) and
+        # never shared.
         stt=NoiseGatedSTT(
             wrapped=openai.STT(
                 model=ENV["STT_MODEL"],
@@ -313,6 +351,15 @@ async def entrypoint(ctx: agents.JobContext) -> None:
                 api_key="local",
                 use_realtime=False,
                 language=STT_LANGUAGE,
+                # Greedy decoding: Whisper's hallucinations on near-silence come from
+                # sampling, so 0 makes it less inclined to invent a sentence.
+                #
+                # Currently a no-op, and measured rather than assumed: mlx-audio's
+                # /v1/audio/transcriptions declares no `temperature` (its handler takes
+                # model/language/chunk_duration/context/text/...) and FastAPI silently
+                # drops unrecognised form fields. Kept because it costs nothing and is
+                # correct against any server that does implement the OpenAI shape.
+                temperature=0.0,
             ),
             gate=NoiseGate(),
         ),

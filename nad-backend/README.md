@@ -169,12 +169,48 @@ STT and TTS are just OpenAI-compatible base URLs, so any server that speaks
 `/v1/audio/transcriptions` and `/v1/audio/speech` works — change `SPEECH_BASE_URL`,
 `STT_MODEL`, `TTS_MODEL` in `.env`. Examples for mlx-audio:
 
-- STT: `mlx-community/parakeet-tdt-0.6b-v3` (fast, English), `mlx-community/whisper-large-v3-turbo-asr-fp16` (multilingual)
+- STT: `mlx-community/whisper-large-v3-asr-fp16` (current default; multilingual),
+  `mlx-community/parakeet-tdt-0.6b-v3` (English only, ~20× faster)
 - TTS: `mlx-community/Kokoro-82M-bf16` (or the `-8bit` / `-4bit` variants); voices: `af_heart`, `bf_alice`, …
 
 Switching to a multilingual STT model also needs `STT_LANGUAGE` in `.env` updated to the
 language you'll actually speak — `agent.py` still pins a single language per session, it
 does not auto-detect.
+
+**Two things are tuned per model family, so revisit both when changing `STT_MODEL`:**
+
+- The transcript blocklists in `agent.py` (`_NOISE_TOKENS`, `_NOISE_PHRASES`). Whisper's
+  decoder is autoregressive and trained on subtitle data, so on near-silence it invents
+  fluent boilerplate — "Thanks for watching", "Please subscribe", or a bare "you". Parakeet
+  is a transducer and fails the opposite way, with short spurious fragments. Each needs its
+  own list; the other one's is useless.
+- Latency. Measured on this Mac, warm, same clips:
+
+  | model | 4.7 s clip | 1.9 s clip |
+  |---|---|---|
+  | `parakeet-tdt-0.6b-v3` | ~0.10 s | ~0.06 s |
+  | `whisper-large-v3-asr-fp16` (current) | ~1.98 s | ~1.76 s |
+
+  Whisper's cost is flat, not proportional: it pads every clip to 30 s, so a short "yes"
+  costs about what a whole sentence does. Parakeet's scales with the audio, which is why
+  the gap widens on short turns — and voice turns are mostly short.
+
+  **Quantisation does not buy latency back**: 4-bit and 8-bit Whisper builds both measured
+  slightly *slower* than fp16, because the bottleneck is the fixed-size encoder pass rather
+  than weight bandwidth. Distilled Whisper builds (fewer decoder layers) are genuinely
+  faster, but pay for it in accuracy on exactly the audio that is already hard — accented
+  speech and real rooms. So the axis is accuracy-vs-latency with nothing free on it:
+  Parakeet at one end, full large-v3 at the other.
+
+Domain jargon is the other cost of a general-purpose model: it has never seen your
+vocabulary, so it returns whatever ordinary English the audio resembled — Whisper renders
+"Kubernetes" as "Kuber NetEase" and "Prometheus" as "ProMe the Us". Nothing in the pipeline
+corrects that today. Whisper's `prompt` field is the obvious lever and `agent.py` cannot use
+it: **mlx-audio ignores `prompt` and `temperature` alike**, since its transcription handler
+declares neither and FastAPI drops unknown form fields silently (the same clip transcribes
+byte-identically with and without one; its own `context` and `text` fields do not bias
+Whisper either). A speech server that implements the full OpenAI shape would fix this
+without any code change here.
 
 ## Turn-taking & barge-in
 
@@ -194,7 +230,7 @@ Tune these in `agent.py` → `TurnHandlingOptions`.
 ## Background noise
 
 Silero fires on any energy transient, and because the STT is batch the VAD is the *only*
-thing deciding what Parakeet ever sees — so without a gate a fan or a TV becomes a turn.
+thing deciding what the STT ever sees — so without a gate a fan or a TV becomes a turn.
 Four layers deal with that, in order of how much they buy:
 
 1. **No double AGC.** `session.start(room_options=...)` sets `auto_gain_control=False`.
@@ -206,8 +242,9 @@ Four layers deal with that, in order of how much they buy:
    and a session-wide floor. A rejected segment costs nothing downstream — `StreamAdapter`
    discards an empty transcript outright, so there is no turn, no end-of-turn inference and
    no HTTP call.
-3. **A transcript gate** in `NadAssistant.on_user_turn_completed` discards filler-only
-   turns. A backstop: by then a preemptive LLM call has already been spent.
+3. **A transcript gate** in `NadAssistant.on_user_turn_completed` discards filler-only turns
+   and Whisper's subtitle-boilerplate hallucinations. A backstop: by then a preemptive LLM
+   call has already been spent. Model-specific — see "Swapping models".
 4. **iOS capture** enables `highpassFilter` and `typingNoiseDetection`, which the LiveKit
    SDK leaves off by default (`VoiceSessionController.swift`).
 
@@ -230,6 +267,12 @@ threshold in `noise_gate.py` will work. Then adjust the constants at the top of 
 Note that `lk agent console` builds no RoomIO, so layer 1 is inactive there and layer 4 is
 iOS-only; the console exercises layers 2 and 3 only. Test the rest on a device.
 
+To debug *transcription* quality rather than gate behaviour, set `NAD_AUDIO_DUMP=/some/dir`
+as well. Every accepted segment is written there as `segNNNN.wav` plus a `.txt` of what the
+STT made of it — the exact bytes the model received, so a bad transcript can be replayed
+against another model offline instead of guessed at. This records the user: opt in
+deliberately, and delete the files afterwards.
+
 ```bash
 uv run --group dev pytest      # unit tests for the gate's decision logic
 ```
@@ -237,7 +280,7 @@ uv run --group dev pytest      # unit tests for the gate's decision logic
 ## Notes
 
 - STT is batch (one HTTP call per utterance) rather than streaming. Latency is dominated by
-  model speed on your Mac; Parakeet is much faster than Whisper for this.
+  model speed on your Mac — see the table under "Swapping models" for measured numbers.
 - The token server is the one process that gains from being a container: no native deps (MLX
   needs the Mac directly) and no need for auto-reload (unlike the agent worker), so it's the
   only client-facing piece besides LiveKit itself. Its image installs the `token-server` group
