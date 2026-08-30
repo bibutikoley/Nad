@@ -33,6 +33,12 @@ def _require_env(*names: str) -> dict[str, str]:
     return values
 
 
+# Checked at import time (not inside entrypoint, which only runs per job) so a
+# misconfigured worker fails `uv run agent.py dev` immediately instead of only
+# blowing up when the first user joins.
+ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_API_KEY")
+
+
 class NadAssistant(Agent):
     def __init__(self) -> None:
         super().__init__(
@@ -49,8 +55,6 @@ server = AgentServer()
 
 @server.rtc_session()
 async def entrypoint(ctx: agents.JobContext) -> None:
-    env = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_API_KEY")
-
     session = AgentSession(
         # Local Silero VAD (runs in-process via livekit-local-inference).
         # Drives speech segmentation for the non-streaming STT below, and is the
@@ -65,21 +69,21 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         # The plugin treats non-realtime models as batch STT; the session wraps it
         # with a VAD StreamAdapter automatically.
         stt=openai.STT(
-            model=env["STT_MODEL"],
+            model=ENV["STT_MODEL"],
             base_url=SPEECH_BASE_URL,
             api_key="local",
             use_realtime=False,
             language=STT_LANGUAGE,
         ),
         llm=openai.LLM(
-            model=env["LLM_MODEL"],
-            base_url=env["LLM_BASE_URL"],
-            api_key=env["LLM_API_KEY"],
+            model=ENV["LLM_MODEL"],
+            base_url=ENV["LLM_BASE_URL"],
+            api_key=ENV["LLM_API_KEY"],
         ),
         # mlx-audio exposes an OpenAI-compatible /v1/audio/speech.
         # WAV avoids the ffmpeg dependency mlx-audio needs for mp3/opus.
         tts=openai.TTS(
-            model=env["TTS_MODEL"],
+            model=ENV["TTS_MODEL"],
             voice=os.environ.get("TTS_VOICE", "af_heart"),
             base_url=SPEECH_BASE_URL,
             api_key="local",
@@ -110,9 +114,9 @@ async def entrypoint(ctx: agents.JobContext) -> None:
 
 if __name__ == "__main__":
     # agents.cli.run_app() is deprecated in favor of `python -m livekit.agents` /
-    # the `lk` CLI, but its replacement's "console" mode talks to the Go `lk` CLI's
-    # TCP dev channel rather than the terminal mic/speaker directly, which the `lk`
-    # CLI isn't part of this project. Keeping run_app() (still functional, just
-    # warns) preserves the `uv run agent.py dev|start|console` workflow in the
+    # the `lk` CLI, but its replacement's "console" mode drives the separate Go
+    # `lk` CLI over a TCP dev channel rather than the terminal mic/speaker directly,
+    # and that CLI isn't part of this project. Keeping run_app() (still functional,
+    # just warns) preserves the `uv run agent.py dev|start|console` workflow in the
     # README without adding that dependency.
     agents.cli.run_app(server)

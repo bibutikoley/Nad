@@ -86,11 +86,6 @@ nad-backend/**/*.sqlite3
 .env.*
 !.env.example
 
-# livekit.yaml carries the live LiveKit API key/secret (must match .env) —
-# same local-config-with-committed-template pattern as .env/.env.example.
-nad-backend/**/livekit.yaml
-!nad-backend/**/livekit.yaml.example
-
 *.pem
 *.key
 *.p12

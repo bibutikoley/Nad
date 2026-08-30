@@ -1,7 +1,14 @@
 services:
   livekit:
     image: livekit/livekit-server:latest
-    command: --config /etc/livekit.yaml
+    # Keys and node IP come from .env (compose auto-loads it from this directory),
+    # so livekit.yaml holds no secrets and nothing machine-specific.
+    # --node-ip: under Docker Desktop the server would otherwise advertise the
+    # container's 172.x address in its ICE candidates, which no phone (or the Mac
+    # host) can reach — signalling succeeds, media silently fails.
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP:?set LIVEKIT_NODE_IP in .env}
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set in .env}: ${LIVEKIT_API_SECRET:?set in .env}"
     ports:
       - "7880:7880"       # WebSocket signalling + HTTP API
       - "7881:7881"       # ICE/TCP fallback

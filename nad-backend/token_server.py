@@ -29,13 +29,25 @@ if not AUTH_TOKEN:
         "TOKEN_SERVER_AUTH_TOKEN is not set. Copy .env.example to .env and fill it in "
         "(generate one with: openssl rand -hex 24)."
     )
+AUTH_TOKEN_BYTES = AUTH_TOKEN.encode()
+
+LIVEKIT_API_KEY = os.environ.get("LIVEKIT_API_KEY", "")
+LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET", "")
+LIVEKIT_URL = os.environ.get("LIVEKIT_URL", "")
+if not (LIVEKIT_API_KEY and LIVEKIT_API_SECRET and LIVEKIT_URL):
+    raise RuntimeError(
+        "LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL must all be set. "
+        "Copy .env.example to .env and fill them in."
+    )
 
 
 @web.middleware
 async def require_auth(request: web.Request, handler: Handler) -> web.StreamResponse:
     header = request.headers.get("Authorization", "")
     scheme, _, presented = header.partition(" ")
-    if scheme != "Bearer" or not hmac.compare_digest(presented, AUTH_TOKEN):
+    # Compare as bytes: hmac.compare_digest on two `str`s raises TypeError if either
+    # contains non-ASCII, which would turn a malformed header into a 500 not a 401.
+    if scheme != "Bearer" or not hmac.compare_digest(presented.encode(), AUTH_TOKEN_BYTES):
         raise web.HTTPUnauthorized(reason="missing or invalid bearer token")
     return await handler(request)
 
@@ -45,12 +57,12 @@ async def token(request: web.Request) -> web.Response:
     identity = request.query.get("identity") or f"user-{uuid.uuid4().hex[:8]}"
 
     jwt = (
-        api.AccessToken(os.environ["LIVEKIT_API_KEY"], os.environ["LIVEKIT_API_SECRET"])
+        api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
         .with_identity(identity)
         .with_grants(api.VideoGrants(room_join=True, room=room))
         .to_jwt()
     )
-    return web.json_response({"url": os.environ["LIVEKIT_URL"], "room": room, "token": jwt})
+    return web.json_response({"url": LIVEKIT_URL, "room": room, "token": jwt})
 
 
 app = web.Application(middlewares=[require_auth])

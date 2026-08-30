@@ -26,11 +26,11 @@ iOS app ──WebRTC──▶ LiveKit server (Docker, :7880)
 
 ```bash
 cd nad-backend
-cp .env.example .env          # then fill in LLM_BASE_URL / LLM_API_KEY / LLM_MODEL
-                               # and generate TOKEN_SERVER_AUTH_TOKEN: openssl rand -hex 24
-cp livekit.yaml.example livekit.yaml   # generate a key/secret pair (see comment in the
-                                        # file) and put the SAME pair in both this file's
-                                        # `keys:` and .env's LIVEKIT_API_KEY/_SECRET
+cp .env.example .env          # fill in LLM_BASE_URL / LLM_API_KEY / LLM_MODEL,
+                               # LIVEKIT_URL / LIVEKIT_NODE_IP (your Mac's LAN IP,
+                               # from `ipconfig getifaddr en0`), a generated
+                               # LIVEKIT_API_KEY/_SECRET pair (see comment in the file),
+                               # and TOKEN_SERVER_AUTH_TOKEN: openssl rand -hex 24
 uv sync                       # creates .venv, installs livekit-agents
 uv run -m livekit.agents download-files   # fetches VAD / turn-detector weights
 ```
@@ -66,18 +66,28 @@ so this project intentionally stays on the deprecated entrypoint for now.)
 Check the token endpoint is reachable and authenticated:
 
 ```bash
-curl -s "http://192.168.0.228:8787/token?room=test" \
+curl -s "http://<your-mac-lan-ip>:8787/token?room=test" \
   -H "Authorization: Bearer $(grep TOKEN_SERVER_AUTH_TOKEN .env | cut -d= -f2)"
 ```
 
 ## Connecting from a physical iPhone
 
-`LIVEKIT_URL` in `.env` points at this Mac's **LAN IP** (`192.168.0.228`) rather than
+`LIVEKIT_URL` in `.env` points at this Mac's **LAN IP** (`<your-mac-lan-ip>`) rather than
 `localhost`, so a phone on the same Wi-Fi can reach it — the Simulator works with either,
 since it shares the Mac's network stack. `livekit.yaml`'s `use_external_ip: false` matches
 this: the server just needs to be reachable on the LAN, not have a real public IP advertised
-via STUN. If this Mac's LAN IP changes (new network, DHCP renewal), update `LIVEKIT_URL` in
-both `.env` and re-check `ipconfig getifaddr en0`.
+via STUN.
+
+With `use_external_ip: false`, LiveKit advertises `rtc.node_ip` in its ICE candidates
+instead — and under Docker Desktop, the address it would auto-detect is the *container's*
+internal `172.x` one, which neither the phone nor the Mac host can reach. Signalling on
+`:7880` still succeeds in that case; only media fails, silently. `docker-compose.yml` avoids
+this by passing `--node-ip` from `LIVEKIT_NODE_IP` in `.env`. (Alternative: run
+`livekit-server` natively via `brew install livekit` instead of `docker compose up`, which
+sidesteps Docker networking entirely on the Mac; keep compose for the real deploy host.)
+
+If this Mac's LAN IP changes (new network, DHCP renewal), update both `LIVEKIT_URL` and
+`LIVEKIT_NODE_IP` in `.env` (`ipconfig getifaddr en0`).
 
 Not yet handled, since `nad-ios` has no networking code yet: iOS **App Transport Security**
 blocks cleartext `ws://`/`http://` to non-localhost hosts by default. Once the app makes its
@@ -115,11 +125,12 @@ Tune these in `agent.py` → `TurnHandlingOptions`.
 
 - STT is batch (one HTTP call per utterance) rather than streaming. Latency is dominated by
   model speed on your Mac; Parakeet is much faster than Whisper for this.
-- `livekit.yaml` (like `.env`) is gitignored — only `livekit.yaml.example` is committed.
-  The self-hosted LiveKit server has no documented way to source its `keys:` map from an
-  environment variable, only from the config file, so keep your local `livekit.yaml`'s
-  `keys:` in sync with `.env`'s `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` by hand.
+- `.env` is the single source of truth for LiveKit's keys and node IP — `livekit-server`
+  reads keys from the `LIVEKIT_KEYS` env var (`key: secret`), and `docker-compose.yml` sets
+  it from `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` and passes `LIVEKIT_NODE_IP` as `--node-ip`.
+  `livekit.yaml` itself holds no secrets and nothing machine-specific, so it's committed.
 - Prod: beyond a real DNS name and TLS (`wss://`, not `ws://`), set `use_external_ip: true`
-  in `livekit.yaml` and switch `LIVEKIT_URL` back off the LAN IP, and put real per-user auth
-  in front of `token_server.py` — its current shared-bearer-token check only keeps
-  strangers off your LAN from minting join tokens, not real users apart from each other.
+  in `livekit.yaml` (this takes precedence over `--node-ip`, so drop `LIVEKIT_NODE_IP` at
+  that point) and switch `LIVEKIT_URL` back off the LAN IP, and put real per-user auth in
+  front of `token_server.py` — its current shared-bearer-token check only keeps strangers
+  off your LAN from minting join tokens, not real users apart from each other.

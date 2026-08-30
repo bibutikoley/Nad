@@ -1,0 +1,14 @@
+# Config for the self-hosted LiveKit server. No secrets here: the API key/secret
+# and this host's LAN IP come from .env via docker-compose.yml.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # false: clients are on the LAN, so there's no public IP worth discovering via
+  # STUN. With it false, the server advertises `node_ip` instead — which
+  # docker-compose.yml passes as --node-ip from LIVEKIT_NODE_IP, because inside
+  # Docker the auto-detected address is the container's unreachable 172.x one.
+  use_external_ip: false
+logging:
+  level: info
