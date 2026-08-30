@@ -43,6 +43,8 @@ if not (LIVEKIT_API_KEY and LIVEKIT_API_SECRET and LIVEKIT_URL):
 
 @web.middleware
 async def require_auth(request: web.Request, handler: Handler) -> web.StreamResponse:
+    if request.path == "/health":  # unauthenticated liveness probe for docker-compose
+        return await handler(request)
     header = request.headers.get("Authorization", "")
     scheme, _, presented = header.partition(" ")
     # Compare as bytes: hmac.compare_digest on two `str`s raises TypeError if either
@@ -50,6 +52,10 @@ async def require_auth(request: web.Request, handler: Handler) -> web.StreamResp
     if scheme != "Bearer" or not hmac.compare_digest(presented.encode(), AUTH_TOKEN_BYTES):
         raise web.HTTPUnauthorized(reason="missing or invalid bearer token")
     return await handler(request)
+
+
+async def health(request: web.Request) -> web.Response:
+    return web.json_response({"status": "ok"})
 
 
 async def token(request: web.Request) -> web.Response:
@@ -66,7 +72,7 @@ async def token(request: web.Request) -> web.Response:
 
 
 app = web.Application(middlewares=[require_auth])
-app.add_routes([web.get("/token", token)])
+app.add_routes([web.get("/token", token), web.get("/health", health)])
 
 if __name__ == "__main__":
     web.run_app(app, host="0.0.0.0", port=int(os.environ.get("TOKEN_SERVER_PORT", "8787")))

@@ -18,9 +18,9 @@ iOS app ──WebRTC──▶ LiveKit server (Docker, :7880)
 | What | How it runs | Why |
 |---|---|---|
 | LiveKit server | `docker compose up` | SFU / signalling. Portable to the eventual prod host. |
-| Speech server (STT + TTS) | `scripts/speech-server.sh` (native, via `uvx`) | MLX needs Apple Silicon directly — it can't run inside Docker. |
-| Agent worker | `uv run agent.py dev` | The STT → LLM → TTS pipeline, VAD, turn detection, barge-in. |
-| Token server | `uv run token_server.py` | Mints join tokens for the iOS client. Requires a shared bearer token (`TOKEN_SERVER_AUTH_TOKEN`) — still dev-grade, not per-user auth. |
+| Token server | `docker compose up` (same command — both containers come up together) | Mints join tokens for the iOS client. Requires a shared bearer token (`TOKEN_SERVER_AUTH_TOKEN`) — still dev-grade, not per-user auth. |
+| Speech server (STT + TTS) | `scripts/dev.sh` (native, via `uvx`) | MLX needs Apple Silicon directly — it can't run inside Docker. |
+| Agent worker | `scripts/dev.sh` (same command — both come up together) | The STT → LLM → TTS pipeline, VAD, turn detection, barge-in. Stays native for `download-files` weights and `dev` auto-reload. |
 
 ## First-time setup
 
@@ -35,13 +35,27 @@ uv sync                       # creates .venv, installs livekit-agents
 uv run -m livekit.agents download-files   # fetches VAD / turn-detector weights
 ```
 
-## Run (4 terminals)
+## Run (2 terminals)
 
 ```bash
-docker compose up                         # 1. LiveKit server
-scripts/speech-server.sh                  # 2. mlx-audio (first request per model downloads it from HF)
-uv run agent.py dev                       # 3. agent worker
-uv run token_server.py                    # 4. token endpoint on :8787
+docker compose up                         # 1. LiveKit server + token endpoint (:7880, :8787)
+scripts/dev.sh                            # 2. speech server + agent worker together
+```
+
+The token server's image builds automatically on the first `docker compose up`. After editing
+`token_server.py`, it needs `docker compose up --build` — the script is baked into the image,
+not bind-mounted like `livekit.yaml`, so a plain `up` keeps running the old code.
+
+`scripts/dev.sh` starts `scripts/speech-server.sh` and `uv run agent.py dev` together (first
+request per model still downloads it from HF, same as running them separately). Ctrl+C stops
+both — and everything each one spawned, including `agent.py dev`'s own worker subprocess and
+`uvx`'s `mlx_audio.server` — and if either one exits on its own (crash), the script notices
+within a second and stops the other rather than leaving it running headless. Run them in
+separate terminals instead when you want to restart or watch one independently of the other:
+
+```bash
+scripts/speech-server.sh                  # mlx-audio (STT + TTS)
+uv run agent.py dev                       # agent worker
 ```
 
 Warm the speech models once so the first real turn isn't slow:
@@ -91,8 +105,9 @@ If this Mac's LAN IP changes (new network, DHCP renewal), update both `LIVEKIT_U
 
 Not yet handled, since `nad-ios` has no networking code yet: iOS **App Transport Security**
 blocks cleartext `ws://`/`http://` to non-localhost hosts by default. Once the app makes its
-first request to this backend, add an ATS local-networking exception (or move both ends to
-TLS) or requests will silently fail.
+first request to this backend, add an `NSAppTransportSecurity` → `NSAllowsLocalNetworking`
+exception to `nad-ios/nad-ios/Info.plist` (plus the `NSLocalNetworkUsageDescription` string
+iOS 14+ prompts the user with) — or move both ends to TLS — or requests will silently fail.
 
 ## Swapping models
 
@@ -125,6 +140,18 @@ Tune these in `agent.py` → `TurnHandlingOptions`.
 
 - STT is batch (one HTTP call per utterance) rather than streaming. Latency is dominated by
   model speed on your Mac; Parakeet is much faster than Whisper for this.
+- The token server is the one process that gains from being a container: no native deps (MLX
+  needs the Mac directly) and no need for auto-reload (unlike the agent worker), so it's the
+  only client-facing piece besides LiveKit itself. Its image installs the `token-server` group
+  from `pyproject.toml` — not the full `livekit-agents` — so it stays tens of MB instead of the
+  ~250 MB the STT/TTS/VAD stack would add.
+- Containerizing the token server doesn't reduce what the iOS client configures — it already
+  points at one endpoint (`http://<lan-ip>:8787`), since `token_server.py` hands back the
+  LiveKit URL rather than the client hardcoding it. What changes is operational: one
+  `docker compose up` instead of a fourth `uv run` terminal. The network still exposes three
+  port groups (`:8787`, `:7880`, `50000–50100/udp`) — collapsing signalling and the token
+  endpoint onto one port would need a reverse proxy in front of both, and WebRTC media UDP can
+  never go through an HTTP proxy regardless, since it's ICE-negotiated end to end.
 - `.env` is the single source of truth for LiveKit's keys and node IP — `livekit-server`
   reads keys from the `LIVEKIT_KEYS` env var (`key: secret`), and `docker-compose.yml` sets
   it from `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` and passes `LIVEKIT_NODE_IP` as `--node-ip`.

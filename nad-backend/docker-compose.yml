@@ -16,3 +16,26 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     restart: unless-stopped
+
+  token-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # LIVEKIT_URL is handed to the iOS client verbatim, so it must stay the Mac's
+      # LAN IP — NOT ws://livekit:7880, which only resolves inside the compose network.
+      LIVEKIT_URL: ${LIVEKIT_URL:?set in .env}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?set in .env}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set in .env}
+      TOKEN_SERVER_AUTH_TOKEN: ${TOKEN_SERVER_AUTH_TOKEN:?set in .env}
+      TOKEN_SERVER_PORT: 8787
+    ports:
+      - "${TOKEN_SERVER_PORT:-8787}:8787"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8787/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

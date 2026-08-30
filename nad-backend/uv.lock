@@ -578,9 +578,23 @@ dependencies = [
     { name = "python-dotenv" },
 ]
 
+[package.dev-dependencies]
+token-server = [
+    { name = "aiohttp" },
+    { name = "livekit-api" },
+    { name = "python-dotenv" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "livekit-agents", extras = ["openai"], specifier = "~=1.7.1" },
+    { name = "python-dotenv", specifier = "~=1.1" },
+]
+
+[package.metadata.requires-dev]
+token-server = [
+    { name = "aiohttp", specifier = "~=3.12" },
+    { name = "livekit-api", specifier = "~=1.0" },
     { name = "python-dotenv", specifier = "~=1.1" },
 ]
 

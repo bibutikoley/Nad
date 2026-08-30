@@ -8,5 +8,15 @@ dependencies = [
     "python-dotenv~=1.1",
 ]
 
+[dependency-groups]
+# token_server.py only needs these — not livekit-agents and its ~200 MB of unused
+# STT/TTS/VAD deps (av, numpy, sounddevice, PIL, ...). Used by Dockerfile's
+# `uv sync --only-group token-server` so the container image stays small.
+token-server = [
+    "livekit-api~=1.0",
+    "aiohttp~=3.12",
+    "python-dotenv~=1.1",
+]
+
 [tool.uv]
 package = false
