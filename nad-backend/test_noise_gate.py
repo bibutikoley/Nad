@@ -313,15 +313,6 @@ def test_wrapper_forwards_identity_and_capabilities():
     "transcript",
     [
         "", "   ", ".", "?", "...", "uh", "Um.", "  Hmm  ",
-        # Whisper emits a bare "you" on silence more than anything else.
-        "you", "You.",
-        # Subtitle boilerplate: Whisper's decoder was trained on caption data and falls
-        # back to it when there is nothing to transcribe.
-        "Thanks for watching!",
-        "thank you for watching",
-        "Please subscribe to my channel.",
-        "Subtitles by the Amara.org community",
-        "Bye bye.",
     ],
 )
 def test_noise_transcripts_are_rejected(transcript):
@@ -337,21 +328,23 @@ def test_noise_transcripts_are_rejected(transcript):
         "Wait!",
         "okay",
         "hey",
-        # Ambiguous under Whisper -- both a hallucination and an ordinary thing to say --
-        # so deliberately allowed. Dropping a real one is worse than answering a spurious
-        # one, which costs a single wasted reply.
         "thanks",
         "thank you",
         "what time is it",
         "um, what were we talking about",
         "hmm let me think",
-        # Boilerplate is matched against the whole transcript, never as a substring, so a
-        # real turn that happens to contain one of those phrases survives.
-        "thanks for watching the demo, what should we do next",
-        "can you subtitle that for me",
-        # "you" is noise alone, but not as part of a real sentence.
         "you were saying",
         "how are you",
+        # A transducer emits words only where the audio supports them, so a multi-word
+        # transcript is speech by construction -- including the phrases a subtitle-trained
+        # decoder would have invented out of silence. These are here to pin that: under
+        # Whisper they were noise, under an RNNT they can only be someone talking.
+        "thanks for watching",
+        "please subscribe to my channel",
+        "subtitles by the Amara.org community",
+        # A VAD-clipped fragment of a real turn. Answering it beats discarding it: the
+        # fault is the segmentation, not the speaker.
+        "can you",
     ],
 )
 def test_real_speech_survives(transcript):

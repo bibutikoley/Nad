@@ -12,7 +12,7 @@ iOS app ──① token──▶ token server (Docker, :8787)
                            agent.py (uv)  ── VAD + end-of-turn model run in-process
                             │        │
                STT ◀────────┘        └────────▶ TTS          LLM ──▶ your OpenAI-compatible endpoint
-               mlx-audio server (native, :8000) — Parakeet/Whisper + Kokoro on MLX
+               mlx-audio server (native, :8000) — Nemotron ASR + Kokoro on MLX
 ```
 
 `docker compose up` runs the token server + LiveKit together — the only two of the above the
@@ -71,7 +71,7 @@ set -a && source .env && set +a && lk agent dev agent.py   # agent worker
 The agent warms the speech models itself at the start of every job (`_warm_speech_models()`
 in `agent.py`), before it reports `lk.agent.state = "listening"` — so a client that waits for
 that state gets a genuinely ready agent rather than one that still has to download Kokoro and
-Parakeet on the first turn. A warm-up failure is logged and the job continues, so a cold or
+the STT model on the first turn. A warm-up failure is logged and the job continues, so a cold or
 broken speech server degrades to a slow first turn rather than a dead session.
 
 To warm them by hand anyway (or to check the server directly):
@@ -79,7 +79,7 @@ To warm them by hand anyway (or to check the server directly):
 ```bash
 curl -s localhost:8000/v1/audio/speech -H 'content-type: application/json' \
   -d '{"model":"mlx-community/Kokoro-82M-bf16","voice":"af_heart","input":"hello","response_format":"wav"}' -o /dev/null
-curl -s localhost:8000/v1/audio/transcriptions -F model=mlx-community/parakeet-tdt-0.6b-v3 -F file=@/path/to/any.wav -F response_format=json
+curl -s localhost:8000/v1/audio/transcriptions -F model=mlx-community/nemotron-3.5-asr-streaming-0.6b -F language=en -F file=@/path/to/any.wav -F response_format=json
 ```
 
 Check the TTS call actually returned audio, not just HTTP 200 — Kokoro can fail *inside* a
@@ -169,8 +169,9 @@ STT and TTS are just OpenAI-compatible base URLs, so any server that speaks
 `/v1/audio/transcriptions` and `/v1/audio/speech` works — change `SPEECH_BASE_URL`,
 `STT_MODEL`, `TTS_MODEL` in `.env`. Examples for mlx-audio:
 
-- STT: `mlx-community/whisper-large-v3-asr-fp16` (current default; multilingual),
-  `mlx-community/parakeet-tdt-0.6b-v3` (English only, ~20× faster)
+- STT: `mlx-community/nemotron-3.5-asr-streaming-0.6b` (current default; multilingual),
+  `mlx-community/whisper-large-v3-asr-fp16` (multilingual, slower),
+  `mlx-community/parakeet-tdt-0.6b-v3` (English only, fastest)
 - TTS: `mlx-community/Kokoro-82M-bf16` (or the `-8bit` / `-4bit` variants); voices: `af_heart`, `bf_alice`, …
 
 Switching to a multilingual STT model also needs `STT_LANGUAGE` in `.env` updated to the
@@ -179,38 +180,64 @@ does not auto-detect.
 
 **Two things are tuned per model family, so revisit both when changing `STT_MODEL`:**
 
-- The transcript blocklists in `agent.py` (`_NOISE_TOKENS`, `_NOISE_PHRASES`). Whisper's
-  decoder is autoregressive and trained on subtitle data, so on near-silence it invents
-  fluent boilerplate — "Thanks for watching", "Please subscribe", or a bare "you". Parakeet
-  is a transducer and fails the opposite way, with short spurious fragments. Each needs its
-  own list; the other one's is useless.
-- Latency. Measured on this Mac, warm, same clips:
+- The transcript blocklist in `agent.py` (`_NOISE_TOKENS`, and the shape of
+  `_looks_like_noise` around it). Transducers — Nemotron, Parakeet — emit a token only when
+  the audio supports one, so on noise they return an empty string and the worst they produce
+  on marginal audio is a *truncated* real phrase. Whisper's decoder is autoregressive and
+  trained on subtitle data, so near-silence makes it invent fluent boilerplate instead —
+  "Thanks for watching", "Please subscribe", a bare "you". The Whisper phrase list is gone
+  from the file rather than sitting there dead; `git log -S "amara" -- agent.py` brings it
+  back if you switch families.
+- Latency. Measured on this Mac, warm, median of five, same two clips:
 
-  | model | 4.7 s clip | 1.9 s clip |
-  |---|---|---|
-  | `parakeet-tdt-0.6b-v3` | ~0.10 s | ~0.06 s |
-  | `whisper-large-v3-asr-fp16` (current) | ~1.98 s | ~1.76 s |
+  | model | 6.1 s clip | 1.8 s clip | on disk |
+  |---|---|---|---|
+  | `parakeet-tdt-0.6b-v3` | ~0.14 s | ~0.07 s | 0.6 GB |
+  | `nemotron-3.5-asr-streaming-0.6b` (current) | ~0.71 s | ~0.23 s | 1.2 GB |
+  | `whisper-large-v3-asr-fp16` | ~1.32 s | ~0.92 s | 2.9 GB |
 
-  Whisper's cost is flat, not proportional: it pads every clip to 30 s, so a short "yes"
-  costs about what a whole sentence does. Parakeet's scales with the audio, which is why
-  the gap widens on short turns — and voice turns are mostly short.
+  Whisper's cost is close to flat: it pads every clip to 30 s, so a short "yes" costs most
+  of what a whole sentence does. Both transducers scale with the audio, which is why the gap
+  widens on short turns — and voice turns are mostly short.
 
-  **Quantisation does not buy latency back**: 4-bit and 8-bit Whisper builds both measured
+  Accuracy is not free at the fast end, but the gap is narrower than the sizes suggest. On
+  the same clips degraded four ways (distant, noisy, VAD-clipped, noise-prefixed) Nemotron
+  matched Whisper everywhere except one substitution under heavy additive noise, and beat it
+  on the two noise-only clips, where Whisper returned "Thank you." and Nemotron returned
+  nothing. Whisper's remaining edge is robustness on genuinely bad room audio; Parakeet's
+  cost is being English-only.
+
+  **Quantisation does not buy latency back on Whisper**: 4-bit and 8-bit builds both measured
   slightly *slower* than fp16, because the bottleneck is the fixed-size encoder pass rather
   than weight bandwidth. Distilled Whisper builds (fewer decoder layers) are genuinely
   faster, but pay for it in accuracy on exactly the audio that is already hard — accented
-  speech and real rooms. So the axis is accuracy-vs-latency with nothing free on it:
-  Parakeet at one end, full large-v3 at the other.
+  speech and real rooms.
+
+  Nemotron is a cache-aware *streaming* model, and none of that is being used here: it is
+  driven batch-mode through `/v1/audio/transcriptions`, one WAV per VAD segment, like every
+  other model above. mlx-audio does expose a `/v1/audio/transcriptions/realtime` websocket,
+  which is the obvious next lever on turn latency — untested against this pipeline, and it
+  would mean giving up the VAD `StreamAdapter` that `noise_gate.py` currently hooks into.
 
 Domain jargon is the other cost of a general-purpose model: it has never seen your
 vocabulary, so it returns whatever ordinary English the audio resembled — Whisper renders
 "Kubernetes" as "Kuber NetEase" and "Prometheus" as "ProMe the Us". Nothing in the pipeline
-corrects that today. Whisper's `prompt` field is the obvious lever and `agent.py` cannot use
-it: **mlx-audio ignores `prompt` and `temperature` alike**, since its transcription handler
-declares neither and FastAPI drops unknown form fields silently (the same clip transcribes
-byte-identically with and without one; its own `context` and `text` fields do not bias
-Whisper either). A speech server that implements the full OpenAI shape would fix this
-without any code change here.
+corrects that today, and the switch to a transducer removes the one lever that looked
+promising rather than adding one. Both halves of that:
+
+- Whisper has a `prompt` field, and `agent.py` could never reach it: **mlx-audio ignores
+  `prompt` and `temperature` alike**, since its transcription handler declares neither and
+  FastAPI drops unknown form fields silently (the same clip transcribes byte-identically
+  with and without one; its own `context` and `text` fields do not bias Whisper either).
+- Nemotron has no equivalent at all. Its only conditioning input is the language prompt
+  index that `STT_LANGUAGE` selects, and mlx-audio's `nemotron_asr.generate()` takes no
+  `hotwords` argument — unlike several other backends in that package, which route one
+  through `merge_hotwords()` into whatever biasing field they natively have.
+
+So biasing needs either a speech server that implements the full OpenAI shape *and* a model
+family that has a prompt, or correction after the fact. An earlier attempt at the latter —
+fuzzy-matching transcripts against a domain lexicon — was built and removed as not worth its
+weight; `git log -- entity_correction.py` has it if that trade-off ever changes.
 
 ## Turn-taking & barge-in
 
@@ -242,9 +269,11 @@ Four layers deal with that, in order of how much they buy:
    and a session-wide floor. A rejected segment costs nothing downstream — `StreamAdapter`
    discards an empty transcript outright, so there is no turn, no end-of-turn inference and
    no HTTP call.
-3. **A transcript gate** in `NadAssistant.on_user_turn_completed` discards filler-only turns
-   and Whisper's subtitle-boilerplate hallucinations. A backstop: by then a preemptive LLM
-   call has already been spent. Model-specific — see "Swapping models".
+3. **A transcript gate** in `NadAssistant.on_user_turn_completed` discards turns that are
+   only filler ("uh", "mm"). A backstop: by then a preemptive LLM call has already been
+   spent. Model-specific, and thinner than it was — the current transducer returns nothing
+   at all on noise, where Whisper returned subtitle boilerplate that had to be listed out.
+   See "Swapping models".
 4. **iOS capture** enables `highpassFilter` and `typingNoiseDetection`, which the LiveKit
    SDK leaves off by default (`VoiceSessionController.swift`).
 

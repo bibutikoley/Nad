@@ -72,43 +72,19 @@ ENV = _require_env("STT_MODEL", "TTS_MODEL", "LLM_MODEL", "LLM_BASE_URL", "LLM_A
 # reads the transcript, and so catches noise that was loud enough to pass but decoded to
 # nothing meaningful.
 #
-# These lists are Whisper-specific, and would be the wrong lists for a transducer. Whisper's
-# decoder is autoregressive and was trained on subtitle data, so on near-silence it does not
-# emit a blank -- it invents a *fluent sentence*, drawn from the boilerplate that pads
-# subtitle corpora ("Thank you.", "Subtitles by ...", "Please subscribe"). A transducer like
-# Parakeet fails the opposite way, emitting short spurious fragments. Revisit both lists if
-# STT_MODEL changes family; README.md -> "Swapping models" says which is which.
-_NOISE_TOKENS = frozenset(
-    {
-        "uh", "um", "mm", "hmm", "mhm", "hm", "ah", "eh", "huh",
-        # Whisper's single most common output on silence.
-        "you",
-    }
-)
-
-# Matched against the whole normalised transcript, never as a substring: a turn that merely
-# contains one of these is a real turn ("thanks for watching the demo, what's next" must
-# survive), whereas a turn that is *only* this is subtitle boilerplate.
+# This list is transducer-specific, and would be the wrong list for Whisper. Nemotron is an
+# RNNT: it emits a token only when the audio supports one, so on noise it returns an empty
+# string (measured: silence, hiss and a desk thump all transcribe to ""), and StreamAdapter
+# drops those before they ever reach a turn. What it *does* produce on marginal audio is
+# truncated real speech -- a VAD-clipped "Can you" -- never invented content.
 #
-# Bare "thanks" / "thank you" are deliberately absent. They are genuinely ambiguous -- both
-# a hallucination and an ordinary thing to say to a voice assistant -- and dropping a real
-# one is worse than passing a spurious one, which costs a single wasted reply.
-_NOISE_PHRASES = frozenset(
-    {
-        "thanks for watching",
-        "thank you for watching",
-        "thanks for watching this video",
-        "please subscribe",
-        "please subscribe to my channel",
-        "like and subscribe",
-        "subtitles by the amara org community",
-        "subtitles by the amaraorg community",
-        "amara org",
-        "subs by",
-        "transcription by castingwords",
-        "bye bye",
-    }
-)
+# Whisper fails the opposite way and needs a different list entirely. Its decoder is
+# autoregressive and trained on subtitle data, so near-silence makes it invent a fluent
+# sentence drawn from the boilerplate padding those corpora: "Thank you.", "Thanks for
+# watching", "Subtitles by the Amara.org community". That list lived here until the model
+# switched; `git log -S "amara" -- agent.py` restores it if STT_MODEL goes back to Whisper.
+# README.md -> "Swapping models" says which family is which.
+_NOISE_TOKENS = frozenset({"uh", "um", "mm", "hmm", "mhm", "hm", "ah", "eh", "huh"})
 
 # Checked first, so a real one-word reply can never be caught by the list above. Short
 # answers are exactly what an over-eager filter breaks, and they matter in a voice UI.
@@ -132,14 +108,11 @@ def _looks_like_noise(transcript: str) -> bool:
         return True
 
     if len(words) > 1:
-        # Multi-word turns are rejected only when the *entire* transcript is known
-        # subtitle boilerplate. Whisper hallucinates fluent sentences, so unlike a
-        # transducer the word count alone says nothing about whether anything was said.
-        #
-        # The allow-list is not consulted here: it protects one-word answers, and
-        # applying it to the first word of a longer turn would rescue every phrase that
-        # merely opens with one ("thanks for watching").
-        return " ".join(words) in _NOISE_PHRASES
+        # A transducer only emits words the audio supports, so anything it strung together
+        # is something that was actually said. There is no multi-word artifact to match
+        # against -- worst case it is a clipped fragment of a real turn, which is a VAD
+        # problem, not a noise problem, and answering it beats discarding it.
+        return False
 
     # Checked first, so a real one-word reply can never be caught by the list below.
     return words[0] not in _ALWAYS_ALLOWED and words[0] in _NOISE_TOKENS
@@ -187,7 +160,8 @@ class NadAssistant(Agent):
 server = AgentServer()
 
 # Long enough to cover a first-ever HuggingFace download of Kokoro and the STT model,
-# which is the worst case this warm-up exists to absorb (~2.9 GB for Whisper large-v3).
+# which is the worst case this warm-up exists to absorb (~1.2 GB for Nemotron ASR, and
+# nearly 3 GB if STT_MODEL is pointed back at Whisper large-v3).
 _WARMUP_TIMEOUT = aiohttp.ClientTimeout(total=600)
 
 
@@ -340,26 +314,28 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         # with a VAD StreamAdapter automatically.
         #
         # Wrapped in the noise gate so ambient room noise never reaches the model: Silero
-        # fires on any energy transient, and Whisper does not return a blank for one -- it
-        # hallucinates a sentence, which is worse than the spurious fragment a transducer
-        # would emit. The gate holds per-room state, so it is built here (per job) and
-        # never shared.
+        # fires on any energy transient, and every such segment otherwise costs a real HTTP
+        # round trip to the speech server. The transducer does return a blank for most of
+        # them -- unlike Whisper, which hallucinates a sentence -- so the gate is now about
+        # latency and wasted work more than about false turns, but it is load-bearing either
+        # way. It holds per-room state, so it is built here (per job) and never shared.
         stt=NoiseGatedSTT(
             wrapped=openai.STT(
                 model=ENV["STT_MODEL"],
                 base_url=SPEECH_BASE_URL,
                 api_key="local",
                 use_realtime=False,
+                # Not a Whisper-style language *hint* here: Nemotron conditions its encoder
+                # on a learned per-language prompt vector, so this picks the prompt index
+                # (its config lists 121 keys, "en" among them). Left unset it would use the
+                # model's "auto" prompt, which is a real option but costs accuracy on the
+                # one language this deployment actually speaks.
                 language=STT_LANGUAGE,
-                # Greedy decoding: Whisper's hallucinations on near-silence come from
-                # sampling, so 0 makes it less inclined to invent a sentence.
-                #
-                # Currently a no-op, and measured rather than assumed: mlx-audio's
-                # /v1/audio/transcriptions declares no `temperature` (its handler takes
-                # model/language/chunk_duration/context/text/...) and FastAPI silently
-                # drops unrecognised form fields. Kept because it costs nothing and is
-                # correct against any server that does implement the OpenAI shape.
-                temperature=0.0,
+                # `temperature` is deliberately absent. It was here for Whisper, whose
+                # near-silence hallucinations come from sampling; an RNNT decodes greedily
+                # by construction, so there is nothing for it to mean. It was a no-op
+                # regardless -- mlx-audio's /v1/audio/transcriptions declares no such field
+                # and FastAPI silently drops unrecognised form fields.
             ),
             gate=NoiseGate(),
         ),

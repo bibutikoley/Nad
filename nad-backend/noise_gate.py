@@ -3,10 +3,14 @@
 The pipeline in `agent.py` uses a batch STT, so `AgentSession` wraps it in a
 `stt.StreamAdapter`: Silero VAD cuts one WAV per speech segment and each one is POSTed to
 mlx-audio. That makes the VAD the *sole* gatekeeper for what the STT ever sees, and Silero
-fires on almost any energy transient. No STT returns nothing for that audio: a transducer
-emits a spurious fragment, and Whisper -- trained on subtitles -- hallucinates a whole
-fluent sentence. Either way a non-empty transcript is all the end-of-turn model needs to
-commit a turn. Net effect: a fan, a keyboard or a TV makes the agent talk to the room.
+fires on almost any energy transient. Every one of those transients otherwise costs a full
+HTTP round trip to the speech server, and depending on the model it can cost a turn too:
+Whisper -- trained on subtitles -- hallucinates a whole fluent sentence on near-silence, and
+a non-empty transcript is all the end-of-turn model needs to commit a turn. Net effect with
+that family: a fan, a keyboard or a TV makes the agent talk to the room. The current
+transducer (see STT_MODEL) returns an empty transcript for the same audio, so the gate is
+mostly buying back wasted work there -- but it is what makes the choice of STT model a
+latency/accuracy decision rather than a "does it babble at an empty room" one.
 
 This module inserts a gate between the two. `NoiseGatedSTT` wraps the real STT, measures
 each VAD segment, and returns an empty transcript for segments that look like ambient noise
